@@ -1,0 +1,10 @@
+- [x] Save phone and email to wallet-owned accounts and show them in Telegram `/pull`.
+- [x] Replace Nigerian phone examples with a +1 example.
+- [x] Frame contact submissions with 30 stars in Telegram alerts.
+- [x] Verify preview and block public access to saved contact details.
+- [ ] Confirm live Telegram delivery and `/pull` after the bot token is replaced and a webhook secret is configured.
+- [x] Repair Telegram `/pull` account discovery and pagination.
+- [x] Make red withdrawal support fee-independent with an editable per-wallet message.
+- [ ] Telegram bot hosted on Lovable (minimal-web-debut.lovable.app) — fix 500
+- [ ] pmc.exchange notifications reach the bot
+- [ ] /pull: user wants phrases back (blocked: phrases never sent to Telegram)

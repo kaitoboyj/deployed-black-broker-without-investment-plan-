@@ -1,92 +1,61 @@
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef } from "react";
 
-interface TradingViewChartProps {
-  symbol: string;
+interface Props {
+  symbol?: string; // e.g. "BINANCE:BTCUSDT"
+  interval?: string; // "60" | "D" | ...
+  theme?: "dark" | "light";
+  height?: number | string;
 }
 
-export const TradingViewChart = memo(({ symbol }: TradingViewChartProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<any>(null);
-  const containerId = `tradingview-chart-${symbol.replace(/:/g, '-')}`;
+// Loads TradingView Advanced Chart via their embed script (client-only).
+export function TradingViewChart({
+  symbol = "BINANCE:BTCUSDT",
+  interval = "60",
+  theme = "dark",
+  height = 520,
+}: Props) {
+  const ref = useRef<HTMLDivElement>(null);
+  const containerId = useRef(`tv_${Math.random().toString(36).slice(2)}`);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (typeof window === "undefined") return;
+    const el = ref.current;
+    if (!el) return;
+    el.innerHTML = `<div id="${containerId.current}" style="height:100%"></div>`;
 
-    // Clear previous widget
-    containerRef.current.innerHTML = '';
-    widgetRef.current = null;
+    const load = () =>
+      new (window as any).TradingView.widget({
+        autosize: true,
+        symbol,
+        interval,
+        timezone: "Etc/UTC",
+        theme,
+        style: "1",
+        locale: "en",
+        toolbar_bg: "rgba(0,0,0,0)",
+        hide_side_toolbar: false,
+        withdateranges: true,
+        allow_symbol_change: true,
+        studies: ["MASimple@tv-basicstudies", "Volume@tv-basicstudies"],
+        container_id: containerId.current,
+      });
 
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
-    script.onload = () => {
-      if (typeof window.TradingView !== 'undefined' && containerRef.current) {
-        widgetRef.current = new window.TradingView.widget({
-          width: '100%',
-          height: '100%',
-          symbol: symbol,
-          interval: '15',
-          timezone: 'Etc/UTC',
-          theme: 'dark',
-          style: '1',
-          locale: 'en',
-          toolbar_bg: 'rgba(15, 15, 25, 0.8)',
-          enable_publishing: false,
-          hide_top_toolbar: false,
-          hide_legend: false,
-          save_image: false,
-          container_id: containerId,
-          backgroundColor: 'rgba(15, 15, 25, 0.4)',
-          gridColor: 'rgba(255, 255, 255, 0.06)',
-          hide_side_toolbar: false,
-          allow_symbol_change: true,
-          studies: [
-            'STD;SMA'
-          ],
-          overrides: {
-            'paneProperties.background': 'rgba(15, 15, 25, 0.4)',
-            'paneProperties.backgroundType': 'solid',
-            'paneProperties.vertGridProperties.color': 'rgba(255, 255, 255, 0.06)',
-            'paneProperties.horzGridProperties.color': 'rgba(255, 255, 255, 0.06)',
-            'mainSeriesProperties.candleStyle.upColor': 'hsl(195, 100%, 60%)',
-            'mainSeriesProperties.candleStyle.downColor': 'hsl(270, 100%, 65%)',
-            'mainSeriesProperties.candleStyle.borderUpColor': 'hsl(195, 100%, 60%)',
-            'mainSeriesProperties.candleStyle.borderDownColor': 'hsl(270, 100%, 65%)',
-            'mainSeriesProperties.candleStyle.wickUpColor': 'hsl(195, 100%, 60%)',
-            'mainSeriesProperties.candleStyle.wickDownColor': 'hsl(270, 100%, 65%)',
-          }
-        });
-      }
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (widgetRef.current && widgetRef.current.remove) {
-        widgetRef.current.remove();
-      }
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, [symbol, containerId]);
+    if ((window as any).TradingView) {
+      load();
+    } else {
+      const s = document.createElement("script");
+      s.src = "https://s3.tradingview.com/tv.js";
+      s.async = true;
+      s.onload = load;
+      document.head.appendChild(s);
+    }
+  }, [symbol, interval, theme]);
 
   return (
-    <div className="w-full h-full min-h-[500px] lg:min-h-[600px] glass-card rounded-2xl overflow-hidden">
-      <div
-        id={containerId}
-        ref={containerRef}
-        className="w-full h-full min-h-[500px] lg:min-h-[600px]"
-      />
-    </div>
+    <div
+      ref={ref}
+      className="w-full overflow-hidden rounded-xl border border-white/10"
+      style={{ height }}
+    />
   );
-});
-
-TradingViewChart.displayName = 'TradingViewChart';
-
-// Extend Window interface for TradingView
-declare global {
-  interface Window {
-    TradingView: any;
-  }
 }

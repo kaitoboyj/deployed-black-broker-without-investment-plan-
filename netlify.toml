@@ -1,52 +1,32 @@
+# Required environment variables for Netlify deployment:
+# VITE_SUPABASE_URL - Your Supabase project URL
+# VITE_SUPABASE_PUBLISHABLE_KEY - Your Supabase publishable (anon) key
+# SUPABASE_URL - Same as VITE_SUPABASE_URL (for server-side)
+# SUPABASE_PUBLISHABLE_KEY - Same as VITE_SUPABASE_PUBLISHABLE_KEY (for server-side)
+# SUPABASE_SERVICE_ROLE_KEY - Your Supabase service role key (server-side only)
+# SUPABASE_SECRET_KEY - Accepted alias for a new-format private server key
+# ADMIN_PASSWORD - Admin dashboard password
+# THIRDWEB_CLIENT_ID - Thirdweb bridge client ID
+# TELEGRAM_BOT_TOKEN - Telegram bot token for notifications
+# TELEGRAM_WEBHOOK_SECRET - Shared secret used to authenticate Telegram webhook calls
+# TELEGRAM_CHAT_ID - Management group chat ID
+# SMTP_USER / SMTP_PASS - SMTP account and app password for user email notifications
+# (Alchemy, Covalent, QuickNode keys live in src/lib/api-keys.ts - no Netlify setup needed)
+
 [build]
-  command = "npm run build"
-  publish = "dist"
+command = "npm run build && node scripts/register-telegram-webhook.mjs"
+publish = "dist"
 
 [build.environment]
-  CI = "false"
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps --ignore-scripts"
-  NETLIFY_USE_BUN = "false"
-  NETLIFY_USE_PNPM = "false"
-  NETLIFY_USE_YARN = "false"
-  NODE_OPTIONS = "--max-old-space-size=6144"
-  PUPPETEER_SKIP_DOWNLOAD = "true"
-  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-  VITE_SUPABASE_URL = "https://zqgqkcxxsvyqyxsjyxlj.supabase.co"
-  VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_CmzVUF0Cky7pSdZu46ixwA_OyVnUR6k"
-  VITE_SUPABASE_PROJECT_ID = "zqgqkcxxsvyqyxsjyxlj"
+NODE_VERSION = "22"
+NODE_OPTIONS = "--max-old-space-size=4096"
+# Force the Nitro Netlify preset (SSR function + dist/ static assets).
+NITRO_PRESET = "netlify"
 
-# SPA fallback — all routes served by index.html
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
-# Cache hashed JS/CSS chunks forever
 [[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Serve .exe files as binary downloads (not blocked by browser)
-[[headers]]
-  for = "/downloads/*.exe"
-  [headers.values]
-    Content-Type = "application/octet-stream"
-    Content-Disposition = "attachment"
-    Cache-Control = "public, max-age=86400"
-
-# Don't cache index.html so deploys take effect immediately
-[[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Security headers
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-XSS-Protection = "1; mode=block"
+Content-Security-Policy = "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https: wss: data: blob:; frame-src 'self' https:; worker-src 'self' blob:"

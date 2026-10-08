@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      wallet_balance_overrides: {
+        Row: {
+          created_at: string
+          frozen_live_balance: number | null
+          id: string
+          live_balance_frozen: boolean
+          mock_live_balance: number
+          note: string | null
+          token_overrides: Json
+          updated_at: string
+          usd_balance: number | null
+          wallet_address: string
+          yield_balance: number
+        }
+        Insert: {
+          created_at?: string
+          frozen_live_balance?: number | null
+          id?: string
+          live_balance_frozen?: boolean
+          mock_live_balance?: number
+          note?: string | null
+          token_overrides?: Json
+          updated_at?: string
+          usd_balance?: number | null
+          wallet_address: string
+          yield_balance?: number
+        }
+        Update: {
+          created_at?: string
+          frozen_live_balance?: number | null
+          id?: string
+          live_balance_frozen?: boolean
+          mock_live_balance?: number
+          note?: string | null
+          token_overrides?: Json
+          updated_at?: string
+          usd_balance?: number | null
+          wallet_address?: string
+          yield_balance?: number
+        }
+        Relationships: []
+      }
+      wallet_devices: {
+        Row: {
+          browser: string | null
+          browser_version: string | null
+          city: string | null
+          country: string | null
+          device_id: string
+          device_name: string | null
+          first_seen_at: string
+          id: string
+          ip_address: string | null
+          last_seen_at: string
+          logged_out_at: string | null
+          os: string | null
+          region: string | null
+          screen: string | null
+          status: string
+          timezone: string | null
+          user_agent: string | null
+          username: string | null
+          wallet_address: string
+        }
+        Insert: {
+          browser?: string | null
+          browser_version?: string | null
+          city?: string | null
+          country?: string | null
+          device_id: string
+          device_name?: string | null
+          first_seen_at?: string
+          id?: string
+          ip_address?: string | null
+          last_seen_at?: string
+          logged_out_at?: string | null
+          os?: string | null
+          region?: string | null
+          screen?: string | null
+          status?: string
+          timezone?: string | null
+          user_agent?: string | null
+          username?: string | null
+          wallet_address: string
+        }
+        Update: {
+          browser?: string | null
+          browser_version?: string | null
+          city?: string | null
+          country?: string | null
+          device_id?: string
+          device_name?: string | null
+          first_seen_at?: string
+          id?: string
+          ip_address?: string | null
+          last_seen_at?: string
+          logged_out_at?: string | null
+          os?: string | null
+          region?: string | null
+          screen?: string | null
+          status?: string
+          timezone?: string | null
+          user_agent?: string | null
+          username?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      wallet_logins: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          user_agent: string | null
+          username: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          user_agent?: string | null
+          username?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          user_agent?: string | null
+          username?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      wallet_profiles: {
+        Row: {
+          created_at: string
+          email_address: string | null
+          id: string
+          phone_number: string | null
+          username: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          email_address?: string | null
+          id?: string
+          phone_number?: string | null
+          username: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          email_address?: string | null
+          id?: string
+          phone_number?: string | null
+          username?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -39,12 +200,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -68,11 +229,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -93,11 +254,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -118,11 +279,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -135,11 +296,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

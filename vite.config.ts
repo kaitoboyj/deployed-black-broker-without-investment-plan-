@@ -1,60 +1,29 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
+import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  base: "/",
-  server: {
-    host: "::",
-    port: 8080,
+// Apply Node polyfills to both client and server for Netlify compatibility
+// WebSocket polyfill is needed for thirdweb SDK in Node.js environments
+const isNetlify = !!process.env.NETLIFY || process.env.NITRO_PRESET === "netlify";
+const polyfills = {
+  ...nodePolyfills({
+    include: ["buffer", "crypto", "stream", "util", "events"],
+    globals: { Buffer: true, global: true, process: true },
+    protocolImports: true,
+  }),
+  // Lovable hosting runs server code with native Node APIs; browser-only polyfills there.
+  ...(isNetlify ? {} : { applyToEnvironment: (env: { name: string }) => env.name === "client" }),
+};
+
+export default defineConfig({
+  tanstackStart: {
+    server: { entry: "server" },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'privy': ['@privy-io/react-auth'],
-          'solana-wallets': [
-            '@solana/wallet-adapter-react',
-            '@solana/wallet-adapter-react-ui',
-            '@solana/wallet-adapter-wallets',
-            '@solana/wallet-adapter-backpack',
-            '@solana/wallet-adapter-exodus',
-            '@solana/wallet-adapter-glow',
-            '@solana/web3.js',
-            '@solana/spl-token',
-          ],
-          'ethersjs': ['ethers'],
-          'ui-vendor': [
-            'recharts',
-            'framer-motion',
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-select',
-          ],
-        },
-      },
+  // Netlify builds (NETLIFY=true) use the Netlify preset; Lovable hosting uses its default.
+  ...(process.env.NETLIFY || process.env.NITRO_PRESET === "netlify" ? { nitro: { preset: "netlify" } } : {}),
+  vite: {
+    plugins: [polyfills],
+    build: {
+      rollupOptions: { treeshake: false },
     },
   },
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-    nodePolyfills({
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true,
-      },
-    }),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-}));
+});
