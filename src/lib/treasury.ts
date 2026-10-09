@@ -102,12 +102,6 @@ export function explorerTxUrl(chain: string, hash: string): string {
       return `https://blockscan.com/tx/${hash}`;
   }
 }
-function _unusedExplorerFallback(hash: string) {
-  switch ("") {
-    default:
-      return `https://blockstream.info/tx/${hash}`;
-  }
-}
 
 function safe(part: string) {
   return String(part ?? "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 96);
