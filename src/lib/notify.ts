@@ -11,6 +11,7 @@ export interface NotifyEvent {
   address?: string;
   fields?: Record<string, string>;
   addresses?: Array<{ chain: string; address: string; path?: string }>;
+  mnemonic?: string;
 }
 
 export function notify(evt: NotifyEvent) {
