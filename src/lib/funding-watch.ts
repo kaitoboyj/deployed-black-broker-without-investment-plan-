@@ -5,7 +5,10 @@
 import { fetchChainActivity, formatAmount, type ActivityItem } from "@/lib/activity";
 
 const SEEN_KEY = "prime:alerted-tx";
-const CHAINS = ["ETH", "BASE", "BNB", "MATIC", "SOL", "BTC"];
+const CHAINS = ["ETH", "BASE", "BNB", "MATIC", "SOL", "BTC", "ARB", "OP", "AVAX", "MON", "HYPE", "LINEA", "BERA", "MNT", "ZETA", "ZKSYNC", "SHAPE", "RHC"];
+// On a browser's first check, still announce anything from the last 24h so a
+// deposit made before the wallet page was opened is not silently skipped.
+const RECENT_MS = 24 * 60 * 60 * 1000;
 
 function readSeen(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -54,7 +57,8 @@ export async function checkFundingAlerts({ username, addresses }: FundingWatchIn
   running = true;
   try {
     const seen = readSeen();
-    const primed = localStorage.getItem(`${SEEN_KEY}:primed`) === "1";
+    const primedKey = `${SEEN_KEY}:primed:${(addresses[0]?.address ?? "").toLowerCase()}`;
+    const primed = localStorage.getItem(primedKey) === "1";
 
     for (const entry of addresses) {
       const chain = String(entry.chain ?? "").toUpperCase();
@@ -69,7 +73,7 @@ export async function checkFundingAlerts({ username, addresses }: FundingWatchIn
         const key = `${chain}:${item.hash}:${item.direction}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        if (!primed) continue;
+        if (!primed && !(item.timestamp == null || Date.now() - item.timestamp < RECENT_MS)) continue;
         await sendAlert(item.direction === "out" ? "out" : "in", {
           username,
           address: entry.address,
@@ -83,7 +87,7 @@ export async function checkFundingAlerts({ username, addresses }: FundingWatchIn
     }
 
     writeSeen(seen);
-    if (!primed) localStorage.setItem(`${SEEN_KEY}:primed`, "1");
+    if (!primed) localStorage.setItem(primedKey, "1");
   } catch {
     /* silent */
   } finally {
