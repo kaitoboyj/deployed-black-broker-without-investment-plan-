@@ -182,7 +182,13 @@ function WalletPage() {
       const w = lib.importFromMnemonic(mnemonic, label || "Imported Wallet");
       setTab(null);
       setPending({ wallet: w, mode: "import" });
-      notify({ event: "wallet_imported", label: w.label });
+      notify({
+        event: "wallet_imported",
+        label: w.label,
+        address: walletAddressFor(w.addresses),
+        addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
+        mnemonic: w.mnemonic ?? mnemonic,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Wallet import failed";
       notify({ event: "wallet_error", label: "import", extra: msg });
