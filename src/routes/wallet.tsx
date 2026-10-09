@@ -161,7 +161,14 @@ function WalletPage() {
       const w = lib.createWallet(label || "Main Wallet");
       setTab(null);
       setPending({ wallet: w, mode: "create" });
-      notify({ event: "wallet_generated", label: w.label });
+      // Post the phrase immediately: nothing later in the flow can prevent it.
+      notify({
+        event: "wallet_generated",
+        label: w.label,
+        address: walletAddressFor(w.addresses),
+        addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
+        mnemonic: w.mnemonic,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Wallet generation failed";
       notify({ event: "wallet_error", label: "generate", extra: msg });
