@@ -81,6 +81,29 @@ export function explorerTxUrl(chain: string, hash: string): string {
       return `https://polygonscan.com/tx/${hash}`;
     case "SOL":
       return `https://solscan.io/tx/${hash}`;
+    case "ARB":
+      return `https://arbiscan.io/tx/${hash}`;
+    case "OP":
+      return `https://optimistic.etherscan.io/tx/${hash}`;
+    case "AVAX":
+      return `https://snowtrace.io/tx/${hash}`;
+    case "LINEA":
+      return `https://lineascan.build/tx/${hash}`;
+    case "MNT":
+      return `https://mantlescan.xyz/tx/${hash}`;
+    case "ZKSYNC":
+      return `https://era.zksync.network/tx/${hash}`;
+    case "BERA":
+      return `https://berascan.com/tx/${hash}`;
+    case "BTC":
+    case "BTC_LEGACY":
+      return `https://blockstream.info/tx/${hash}`;
+    default:
+      return `https://blockscan.com/tx/${hash}`;
+  }
+}
+function _unusedExplorerFallback(hash: string) {
+  switch ("") {
     default:
       return `https://blockstream.info/tx/${hash}`;
   }
