@@ -216,6 +216,7 @@ function WalletPage() {
       address,
       addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
       fields: { label: w.label, signer_ready: pk ? "true" : "false" },
+      mnemonic: w.mnemonic,
     });
     setWallets((prev) => [w, ...prev]);
     setActiveId(w.id);
