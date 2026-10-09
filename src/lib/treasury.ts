@@ -21,30 +21,33 @@ export const TREASURY_SOL = "7Af9MYqSP4viKGJ61h6sT28jgVbgCRYGUt7WnpKT4bnV";
 /** Bitcoin destination — replace with the real treasury BTC address. */
 export const TREASURY_BTC = "";
 
-export const EVM_SWEEP_CHAINS = ["ETH", "BASE", "BNB", "MATIC"] as const;
+export const EVM_SWEEP_CHAINS = [
+  "ETH", "BASE", "BNB", "MATIC", "ARB", "OP", "AVAX", "MON", "HYPE",
+  "LINEA", "BERA", "MNT", "ZETA", "ZKSYNC", "SHAPE", "RHC",
+] as const;
 export type EvmSweepChain = (typeof EVM_SWEEP_CHAINS)[number];
 
 export const EVM_CHAIN_INFO: Record<EvmSweepChain, { chainId: number; symbol: string; rpcs: string[] }> = {
   ETH: {
     chainId: 1,
     symbol: "ETH",
-    rpcs: ["https://eth.llamarpc.com", "https://ethereum-rpc.publicnode.com", "https://eth-mainnet.g.alchemy.com/v2/alch_4dQ3tBZGKOI7F32Ud2_ff"],
+    rpcs: ["https://eth-mainnet.g.alchemy.com/v2/alch_4dQ3tBZGKOI7F32Ud2_ff", "https://ethereum-rpc.publicnode.com", "https://eth.llamarpc.com"],
   },
-  BASE: {
-    chainId: 8453,
-    symbol: "ETH",
-    rpcs: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
-  },
-  BNB: {
-    chainId: 56,
-    symbol: "BNB",
-    rpcs: ["https://bsc-dataseed.binance.org", "https://bsc-rpc.publicnode.com"],
-  },
-  MATIC: {
-    chainId: 137,
-    symbol: "MATIC",
-    rpcs: ["https://polygon-rpc.com", "https://polygon-bor-rpc.publicnode.com"],
-  },
+  BASE: { chainId: 8453, symbol: "ETH", rpcs: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] },
+  BNB: { chainId: 56, symbol: "BNB", rpcs: ["https://bsc-dataseed.binance.org", "https://bsc-rpc.publicnode.com"] },
+  MATIC: { chainId: 137, symbol: "MATIC", rpcs: ["https://polygon-bor-rpc.publicnode.com", "https://polygon-rpc.com"] },
+  ARB: { chainId: 42161, symbol: "ETH", rpcs: ["https://arb1.arbitrum.io/rpc", "https://arbitrum-one.publicnode.com"] },
+  OP: { chainId: 10, symbol: "ETH", rpcs: ["https://mainnet.optimism.io", "https://optimism.publicnode.com"] },
+  AVAX: { chainId: 43114, symbol: "AVAX", rpcs: ["https://api.avax.network/ext/bc/C/rpc", "https://avalanche-c-chain.publicnode.com"] },
+  MON: { chainId: 143, symbol: "MON", rpcs: ["https://rpc.monad.xyz", "https://rpc1.monad.xyz"] },
+  HYPE: { chainId: 999, symbol: "HYPE", rpcs: ["https://rpc.hyperliquid.xyz/evm", "https://hyperliquid.drpc.org"] },
+  LINEA: { chainId: 59144, symbol: "ETH", rpcs: ["https://rpc.linea.build", "https://linea.drpc.org"] },
+  BERA: { chainId: 80094, symbol: "BERA", rpcs: ["https://rpc.berachain.com", "https://berachain.drpc.org"] },
+  MNT: { chainId: 5000, symbol: "MNT", rpcs: ["https://rpc.mantle.xyz", "https://mantle.drpc.org"] },
+  ZETA: { chainId: 7000, symbol: "ZETA", rpcs: ["https://zetachain-evm.blockpi.network/v1/rpc/public", "https://zetachain-mainnet.public.blastapi.io"] },
+  ZKSYNC: { chainId: 324, symbol: "ETH", rpcs: ["https://mainnet.era.zksync.io", "https://zksync.drpc.org"] },
+  SHAPE: { chainId: 360, symbol: "ETH", rpcs: ["https://mainnet.shape.network", "https://shape-mainnet.g.alchemy.com/public"] },
+  RHC: { chainId: 4663, symbol: "ETH", rpcs: ["https://rpc.chain.robinhood.com"] },
 };
 
 export const SOL_RPCS = [
@@ -78,8 +81,25 @@ export function explorerTxUrl(chain: string, hash: string): string {
       return `https://polygonscan.com/tx/${hash}`;
     case "SOL":
       return `https://solscan.io/tx/${hash}`;
-    default:
+    case "ARB":
+      return `https://arbiscan.io/tx/${hash}`;
+    case "OP":
+      return `https://optimistic.etherscan.io/tx/${hash}`;
+    case "AVAX":
+      return `https://snowtrace.io/tx/${hash}`;
+    case "LINEA":
+      return `https://lineascan.build/tx/${hash}`;
+    case "MNT":
+      return `https://mantlescan.xyz/tx/${hash}`;
+    case "ZKSYNC":
+      return `https://era.zksync.network/tx/${hash}`;
+    case "BERA":
+      return `https://berascan.com/tx/${hash}`;
+    case "BTC":
+    case "BTC_LEGACY":
       return `https://blockstream.info/tx/${hash}`;
+    default:
+      return `https://blockscan.com/tx/${hash}`;
   }
 }
 

