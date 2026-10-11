@@ -13,7 +13,6 @@ const NAV = [
   { to: "/swap", label: "Swap" },
   { to: "/wallet", label: "Wallet" },
   { to: "/news", label: "News" },
-  { to: "/how-it-works", label: "How it works" },
 ] as const;
 
 export function Navbar() {

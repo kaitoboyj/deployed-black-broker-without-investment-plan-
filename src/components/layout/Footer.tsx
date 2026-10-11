@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Zap } from "lucide-react";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export function Footer() {
   return (
@@ -23,13 +23,16 @@ export function Footer() {
           ["Trade", "/trade"],
           ["Wallet", "/wallet"],
         ]} />
-        <FooterCol title="Company" links={[["About", "/"], ["Careers", "/"], ["Press", "/"]]} />
-        <FooterCol title="Resources" links={[["Docs", "/"], ["API", "/"], ["Status", "/"]]} />
+        <FooterCol title="Company" links={[["About", "/"], ["How it works", "/how-it-works"], ["Press", "/"]]} />
+        <FooterCol title="Resources" links={[["How it works", "/how-it-works"], ["Docs", "/"], ["Status", "/"]]} />
       </div>
       <div className="border-t border-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} PrimeCapital Labs. Trading crypto carries risk.</p>
-          <p>Prices via CoinGecko. Wallets generated locally in your browser.</p>
+          <div className="flex items-center gap-4">
+            <Link to="/how-it-works" className="hover:text-foreground">How it works</Link>
+            <LanguageToggle />
+          </div>
         </div>
       </div>
     </footer>
