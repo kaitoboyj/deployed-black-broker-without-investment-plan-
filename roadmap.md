@@ -12,3 +12,5 @@
 - [x] Verify Markets interactions and presentation in the running preview.
 - [x] Replace Markets history chart with live TradingView and show worldwide market capitalization with 24h change; verify both.
 - [x] Remove Markets live label, compact worldwide capitalization, and animate top-ten Market pulse with logos; verify.
+- [ ] Upgrade News presentation with editorial feed, categories, search, saved articles and market sidebar without changing news sources.
+- [ ] Verify News interactions and page presentation.
