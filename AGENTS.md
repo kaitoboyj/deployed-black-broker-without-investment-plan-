@@ -16,3 +16,4 @@
 - Telegram webhook secret: use TELEGRAM_WEBHOOK_SECRET or derive it from the bot token (same formula in webhook route and register script), so registration never silently skips.
 - Store each wallet's red withdrawal support prompt in its balance override row so Admin, Mix Man, and the withdrawal page share one server-controlled value.
 - Markets asset panels consume the existing markets query; worldwide capitalization and its 24h change use CoinGecko global data separately, and the main chart uses a TradingView iframe feed to avoid presenting sampled history as streaming data.
+- Market pulse is a separate presentation component over the existing markets data; its pure ranking and compact-total helpers are tested so ticker selection and worldwide number formatting remain independently verifiable.
