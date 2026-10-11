@@ -5,6 +5,8 @@ import { ArrowDown, ArrowDownUp, ArrowUpRight, BarChart3, ChevronLeft, ChevronRi
 import { marketsQuery, globalMarketQuery, formatUSD, formatCompact, formatPct, type Coin } from "@/lib/prices";
 import { Sparkline } from "@/components/Sparkline";
 import { MarketPriceChart } from "@/components/markets/MarketPriceChart";
+import { MarketPulse } from "@/components/markets/MarketPulse";
+import { formatMarketCapitalization } from "@/lib/market-pulse";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -58,13 +60,7 @@ function MarketsPage() {
     const anchor = document.createElement("a"); anchor.href = url; anchor.download = "primecapital-markets.csv"; anchor.click(); URL.revokeObjectURL(url);
   };
   return <div className="markets-terminal">
-    <div className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-[1440px] items-center overflow-x-auto px-4 sm:px-6">
-        <span className="mr-5 flex shrink-0 items-center gap-2 border-r border-border py-4 pr-5 text-[10px] font-semibold uppercase text-muted-foreground"><span className={cn("h-1.5 w-1.5 rounded-full", data ? "bg-success" : "bg-warning")} />Market pulse</span>
-        {assets.slice(0, 5).map((coin) => <Button key={coin.id} variant="ghost" onClick={() => setSelected(coin.id)} className="h-12 shrink-0 gap-3 rounded-none px-4 text-xs"><span className="font-semibold">{coin.symbol.toUpperCase()}</span><span className="font-mono text-muted-foreground">{formatUSD(coin.current_price)}</span><Change value={coin.price_change_percentage_24h} /></Button>)}
-        {isLoading && <span className="text-xs text-muted-foreground">Connecting to markets…</span>}
-      </div>
-    </div>
+    <MarketPulse coins={assets} loading={isLoading} onSelect={setSelected} />
     <div className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8">
       <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0"><div className="mb-2 flex items-center gap-2 text-[10px] font-medium uppercase text-muted-foreground"><Globe2 className="h-3 w-3" />Global markets<span className="text-primary">/ Overview</span></div><h1 className="text-2xl font-semibold sm:text-3xl">Market overview<span className="text-primary">.</span></h1></div>
@@ -72,7 +68,7 @@ function MarketsPage() {
       </header>
       {isError && <div className="mb-5 flex items-center justify-between gap-3 border border-warning/30 bg-warning/5 p-3 text-sm text-warning">Market data is temporarily unavailable.<Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button></div>}
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric label="Global market capitalization" value={global.data ? formatUSD(global.data.marketCap, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "—"} note={global.data ? `Worldwide · ${new Date(global.data.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${global.isError ? " · Update delayed" : ""}` : global.isError ? "Global data unavailable" : "Connecting…"} icon={<Globe2 className="h-4 w-4" />} change={global.data?.change24h} />
+        <Metric label="Global market capitalization" value={global.data ? formatMarketCapitalization(global.data.marketCap) : "—"} note={global.data ? `Worldwide · ${new Date(global.data.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${global.isError ? " · Update delayed" : ""}` : global.isError ? "Global data unavailable" : "Connecting…"} icon={<Globe2 className="h-4 w-4" />} change={global.data?.change24h} />
         <Metric label="24h trading volume" value={data ? `$${formatCompact(totalVolume)}` : "—"} note="Top 100 assets" icon={<BarChart3 className="h-4 w-4" />} prices={assets[1]?.sparkline_in_7d?.price} />
         <Metric label="Bitcoin share" value={data && totalCap ? `${((btc?.market_cap ?? 0) / totalCap * 100).toFixed(2)}%` : "—"} note="Of tracked market cap" icon={<CircleDollarSign className="h-4 w-4" />} prices={btc?.sparkline_in_7d?.price} />
         <Metric label="Market breadth" value={data ? `${advancing} / ${assets.length}` : "—"} note="Assets advancing · 24h" icon={<TrendingUp className="h-4 w-4" />} prices={assets[2]?.sparkline_in_7d?.price} />

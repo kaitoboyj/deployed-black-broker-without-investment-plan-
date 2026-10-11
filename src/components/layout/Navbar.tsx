@@ -48,9 +48,6 @@ export function Navbar() {
             <span className="font-display text-lg font-semibold tracking-tight">
               Prime<span className="text-gradient">Capital</span>
             </span>
-            <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-success">
-              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Markets live
-            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
