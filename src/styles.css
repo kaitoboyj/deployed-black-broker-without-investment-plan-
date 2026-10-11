@@ -252,3 +252,14 @@ body { top: 0 !important; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 a, button { transition: color .15s, background-color .15s, border-color .15s, box-shadow .15s, opacity .15s; }
+
+.markets-terminal {
+  background: var(--background);
+  letter-spacing: 0;
+}
+.markets-terminal h1, .markets-terminal h2, .markets-terminal h3 {
+  letter-spacing: 0;
+}
+.markets-terminal .font-mono {
+  font-variant-numeric: tabular-nums;
+}
