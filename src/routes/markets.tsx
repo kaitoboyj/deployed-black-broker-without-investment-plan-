@@ -62,9 +62,6 @@ function MarketsPage() {
           <h1 className="mt-2 font-display text-3xl md:text-4xl font-semibold">
             Live crypto prices
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm max-w-lg">
-            Top {coins.length} assets by market cap, refreshed every 30 seconds. Click any row to trade.
-          </p>
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

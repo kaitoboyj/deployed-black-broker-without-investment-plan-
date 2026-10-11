@@ -43,10 +43,28 @@ const INTERVALS = [
 function TradePage() {
   const [pairIdx, setPairIdx] = useState(0);
   const [interval, setInterval] = useState("60");
-  const pair = PAIRS[pairIdx];
+  const [custom, setCustom] = useState<CustomToken | null>(null);
+  const [quote, setQuote] = useState("USDT");
+  const basePair = PAIRS[pairIdx];
 
   const { data } = useQuery(marketsQuery(50));
-  const coin = data?.find((c) => c.id === pair.id);
+  const baseCoin = data?.find((c) => c.id === basePair.id);
+  const quoteUsd = quote === "USDT" ? 1 : (data?.find((c) => c.symbol.toUpperCase() === quote)?.current_price ?? 0);
+  const coin = custom
+    ? {
+        id: custom.contract,
+        image: "",
+        name: custom.name,
+        current_price: quoteUsd ? custom.price / quoteUsd : 0,
+        price_change_percentage_24h: custom.change24h ?? 0,
+        total_volume: custom.volume24h ?? 0,
+        market_cap: custom.marketCap ?? 0,
+      }
+    : baseCoin;
+  const pair = custom
+    ? { id: custom.contract, symbol: `${custom.symbol}${quote}`, label: `${custom.symbol} / ${quote}` }
+    : basePair;
+  const baseSym = custom ? custom.symbol : basePair.symbol.replace("USDT", "");
 
   return (
     <div className="mx-auto max-w-[1600px] px-3 sm:px-4 lg:px-6 py-6">
@@ -60,11 +78,11 @@ function TradePage() {
             {PAIRS.map((p, i) => {
               const c = data?.find((x) => x.id === p.id);
               const up = (c?.price_change_percentage_24h ?? 0) >= 0;
-              const active = i === pairIdx;
+              const active = !custom && i === pairIdx;
               return (
                 <li key={p.id}>
                   <button
-                    onClick={() => setPairIdx(i)}
+                    onClick={() => { setPairIdx(i); setCustom(null); setQuote("USDT"); }}
                     className={cn(
                       "w-full flex items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-sm transition",
                       active ? "bg-white/10" : "hover:bg-white/5",
@@ -85,6 +103,7 @@ function TradePage() {
               );
             })}
           </ul>
+          <CustomPairForm onLoaded={(t) => { setCustom(t); setQuote("USDT"); }} active={custom} />
         </aside>
 
         {/* Center: chart + book */}
@@ -92,7 +111,7 @@ function TradePage() {
           <div className="glass rounded-xl p-4">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3">
-                {coin && <img src={coin.image} alt="" className="h-9 w-9 rounded-full" />}
+                {coin?.image && <img src={coin.image} alt="" className="h-9 w-9 rounded-full" />}
                 <div>
                   <p className="font-display text-lg font-semibold">{pair.label}</p>
                   <p className="text-xs text-muted-foreground">{coin?.name}</p>
@@ -100,7 +119,7 @@ function TradePage() {
               </div>
               {coin && (
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                  <Stat label="Last" value={formatUSD(coin.current_price)} />
+                  <Stat label="Last" value={custom && quote !== "USDT" ? `${fmtNum(coin.current_price)} ${quote}` : formatUSD(coin.current_price)} />
                   <Stat
                     label="24h %"
                     value={formatPct(coin.price_change_percentage_24h)}
@@ -125,18 +144,41 @@ function TradePage() {
                 ))}
               </div>
             </div>
-            <TradingViewChart symbol={`BINANCE:${pair.symbol}`} interval={interval} height={520} />
+            {custom && (
+              <div className="mb-3 flex flex-wrap items-center gap-1 text-xs">
+                <span className="text-muted-foreground mr-1">Value in:</span>
+                {QUOTES.map((q) => (
+                  <button key={q} onClick={() => setQuote(q)} className={cn("px-2.5 py-1 rounded-md", quote === q ? "bg-white/10" : "text-muted-foreground hover:bg-white/5")}>{q}</button>
+                ))}
+                <span className="ml-auto font-mono text-muted-foreground">
+                  {QUOTES.map((q) => {
+                    const u = q === "USDT" ? 1 : (data?.find((c) => c.symbol.toUpperCase() === q)?.current_price ?? 0);
+                    return u ? `${fmtNum(custom.price / u)} ${q}` : null;
+                  }).filter(Boolean).join(" · ")}
+                </span>
+              </div>
+            )}
+            {custom ? (
+              <iframe
+                title={`${custom.symbol} chart`}
+                src={`https://dexscreener.com/${dexChain(custom.chain)}/${custom.contract}?embed=1&theme=dark&trades=0&info=0`}
+                className="w-full rounded-lg border-0"
+                style={{ height: 520 }}
+              />
+            ) : (
+              <TradingViewChart symbol={`BINANCE:${pair.symbol}`} interval={interval} height={520} />
+            )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <OrderBook basePrice={coin?.current_price ?? 0} />
-            <RecentTrades basePrice={coin?.current_price ?? 0} symbol={pair.symbol.replace("USDT", "")} />
+            <OrderBook basePrice={coin?.current_price ?? 0} quote={custom ? quote : "USDT"} />
+            <RecentTrades basePrice={coin?.current_price ?? 0} symbol={baseSym} quote={custom ? quote : "USDT"} />
           </div>
         </section>
 
         {/* Right: order entry */}
         <aside className="order-3 h-fit lg:sticky lg:top-20">
-          <OrderPanel price={coin?.current_price ?? 0} symbol={pair.symbol.replace("USDT", "")} />
+          <OrderPanel price={coin?.current_price ?? 0} symbol={baseSym} quote={custom ? quote : "USDT"} />
         </aside>
       </div>
     </div>
@@ -158,7 +200,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "up
   );
 }
 
-function OrderBook({ basePrice }: { basePrice: number }) {
+function OrderBook({ basePrice, quote }: { basePrice: number; quote: string }) {
   const rows = useMemo(() => generateBook(basePrice), [basePrice]);
   return (
     <div className="glass rounded-xl p-4">
@@ -167,7 +209,7 @@ function OrderBook({ basePrice }: { basePrice: number }) {
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Simulated · Depth 12</span>
       </div>
       <div className="grid grid-cols-3 text-[10px] uppercase tracking-widest text-muted-foreground pb-2">
-        <span>Price (USDT)</span>
+        <span>Price ({quote})</span>
         <span className="text-right">Amount</span>
         <span className="text-right">Total</span>
       </div>
@@ -175,7 +217,7 @@ function OrderBook({ basePrice }: { basePrice: number }) {
         {rows.asks.map((r, i) => <BookRow key={"a" + i} row={r} side="ask" />)}
       </div>
       <div className="my-2 text-center py-1 rounded bg-white/5 font-mono text-sm">
-        {formatUSD(basePrice)}
+        {quote === "USDT" ? formatUSD(basePrice) : `${fmtNum(basePrice)} ${quote}`}
       </div>
       <div className="space-y-0.5">
         {rows.bids.map((r, i) => <BookRow key={"b" + i} row={r} side="bid" />)}
@@ -193,7 +235,7 @@ function BookRow({ row, side }: { row: { price: number; amount: number; pct: num
         style={{ width: `${row.pct}%` }}
       />
       <span className={cn("relative", side === "bid" ? "text-success" : "text-destructive")}>
-        {row.price.toFixed(2)}
+        {fmtNum(row.price)}
       </span>
       <span className="relative text-right">{row.amount.toFixed(4)}</span>
       <span className="relative text-right text-muted-foreground">{total.toFixed(0)}</span>
@@ -218,7 +260,7 @@ function generateBook(base: number) {
   return { bids, asks };
 }
 
-function RecentTrades({ basePrice, symbol }: { basePrice: number; symbol: string }) {
+function RecentTrades({ basePrice, symbol }: { basePrice: number; symbol: string; quote: string }) {
   const trades = useMemo(() => {
     if (!basePrice) return [];
     const now = Date.now();
@@ -244,7 +286,7 @@ function RecentTrades({ basePrice, symbol }: { basePrice: number; symbol: string
       <ul className="space-y-0.5">
         {trades.map((t, i) => (
           <li key={i} className="grid grid-cols-3 text-xs font-mono">
-            <span className={t.buy ? "text-success" : "text-destructive"}>{t.price.toFixed(2)}</span>
+            <span className={t.buy ? "text-success" : "text-destructive"}>{fmtNum(t.price)}</span>
             <span className="text-right">{t.amount.toFixed(4)}</span>
             <span className="text-right text-muted-foreground">
               {t.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -256,7 +298,7 @@ function RecentTrades({ basePrice, symbol }: { basePrice: number; symbol: string
   );
 }
 
-function OrderPanel({ price, symbol }: { price: number; symbol: string }) {
+function OrderPanel({ price, symbol, quote }: { price: number; symbol: string; quote: string }) {
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [mode, setMode] = useState<"market" | "limit" | "stop">("limit");
   const [amount, setAmount] = useState("");
@@ -332,7 +374,7 @@ function OrderPanel({ price, symbol }: { price: number; symbol: string }) {
         </div>
 
         {mode !== "market" && (
-          <Field label="Price (USDT)">
+          <Field label={`Price (${quote})`}>
             <input
               value={limit}
               onChange={(e) => setLimit(e.target.value)}
@@ -455,5 +497,81 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span>{value}</span>
     </div>
+  );
+}
+
+interface CustomToken {
+  chain: string;
+  contract: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change24h?: number;
+  volume24h?: number;
+  marketCap?: number;
+}
+
+const QUOTES = ["USDT", "BTC", "ETH", "SOL", "BNB"];
+
+const DEX_CHAIN_IDS: Record<string, string> = {
+  ETH: "ethereum", BNB: "bsc", MATIC: "polygon", BASE: "base", SOL: "solana",
+  OP: "optimism", ARB: "arbitrum", AVAX: "avalanche", LINEA: "linea", BERA: "berachain",
+  MNT: "mantle", ZETA: "zetachain", ZKSYNC: "zksync", MON: "monad", HYPE: "hyperevm",
+};
+function dexChain(c: string) {
+  return DEX_CHAIN_IDS[c] ?? c.toLowerCase();
+}
+
+function fmtNum(n: number) {
+  if (!n) return "0";
+  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (n >= 1) return n.toFixed(4);
+  return n.toPrecision(4);
+}
+
+function CustomPairForm({ onLoaded, active }: { onLoaded: (t: CustomToken) => void; active: CustomToken | null }) {
+  const [addr, setAddr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const load = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const contract = addr.trim();
+    if (!contract) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/token-meta?contract=${encodeURIComponent(contract)}`);
+      const j = await res.json();
+      if (!res.ok || j.error) throw new Error(j.error || "Token not found");
+      // Extra 24h stats from DexScreener (public, no key needed).
+      let extra: Partial<CustomToken> = {};
+      try {
+        const d = await (await fetch(`https://api.dexscreener.com/latest/dex/tokens/${contract}`)).json();
+        const p = (d?.pairs ?? []).sort((a: any, b: any) => Number(b?.liquidity?.usd ?? 0) - Number(a?.liquidity?.usd ?? 0))[0];
+        if (p) extra = { change24h: Number(p.priceChange?.h24 ?? 0), volume24h: Number(p.volume?.h24 ?? 0), marketCap: Number(p.marketCap ?? p.fdv ?? 0) };
+      } catch { /* optional */ }
+      onLoaded({ chain: j.chain, contract: j.contract, symbol: j.symbol, name: j.name, price: Number(j.price) || 0, ...extra });
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Lookup failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form onSubmit={load} className="mt-2 border-t border-white/5 p-3 space-y-2">
+      <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Trade a new pair</h3>
+      <input
+        value={addr}
+        onChange={(e) => setAddr(e.target.value)}
+        placeholder="Paste token contract address"
+        aria-label="Token contract address"
+        className="w-full rounded-lg bg-white/5 px-3 py-2 text-xs font-mono outline-none focus:ring-1 focus:ring-primary"
+      />
+      <button disabled={busy} className="w-full rounded-lg bg-primary py-2 text-xs font-semibold text-primary-foreground disabled:opacity-60">
+        {busy ? "Detecting token…" : "Load pair"}
+      </button>
+      {err && <p className="text-xs text-destructive">{err}</p>}
+      {active && <p className="text-xs text-muted-foreground">Trading <span className="text-foreground font-medium">{active.name}</span> ({active.chain})</p>}
+    </form>
   );
 }

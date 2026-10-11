@@ -241,3 +241,8 @@
 @utility animate-float {
   animation: float-slow 6s ease-in-out infinite;
 }
+
+/* Hide Google translator chrome used by the language toggle */
+.goog-te-banner-frame, .skiptranslate iframe, #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+body { top: 0 !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
