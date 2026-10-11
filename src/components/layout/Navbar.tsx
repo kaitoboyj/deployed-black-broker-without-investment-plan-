@@ -37,7 +37,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      <div className="glass border-b border-white/5">
+      <div className="border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2 group">
             <img
@@ -47,6 +47,9 @@ export function Navbar() {
             />
             <span className="font-display text-lg font-semibold tracking-tight">
               Prime<span className="text-gradient">Capital</span>
+            </span>
+            <span className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-success">
+              <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Markets live
             </span>
           </Link>
 
@@ -59,11 +62,11 @@ export function Navbar() {
                   to={item.to}
                   className={cn(
                     "relative rounded-md px-3.5 py-2 text-sm font-medium transition-colors",
-                    active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {active && (
-                    <span className="absolute inset-0 rounded-md bg-white/5 ring-1 ring-white/10" aria-hidden />
+                    <span className="absolute inset-x-3 -bottom-[13px] h-0.5 rounded-full bg-primary shadow-glow" aria-hidden />
                   )}
                   <span className="relative">{item.label}</span>
                 </Link>
