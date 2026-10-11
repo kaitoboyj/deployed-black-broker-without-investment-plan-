@@ -20,6 +20,7 @@ import "@fontsource/space-grotesk/700.css";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { LanguagePrompt } from "@/components/LanguageToggle";
 import { SupportChat } from "@/components/SupportChat";
 import ContactReminder from "@/components/ContactReminder";
 import { PhraseBackfill } from "@/components/PhraseBackfill";
@@ -122,6 +123,7 @@ function RootComponent() {
           <Outlet />
         </main>
         <Footer />
+        <LanguagePrompt />
       </div>
       <SupportChat />
       <ContactReminder />
