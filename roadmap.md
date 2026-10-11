@@ -10,3 +10,4 @@
 - [ ] /pull: user wants phrases back (blocked: phrases never sent to Telegram)
 - [x] Upgrade Markets with terminal-style metrics, price chart, watchlist, filters and pagination; preserve existing trading navigation.
 - [x] Verify Markets interactions and presentation in the running preview.
+- [ ] Replace Markets history chart with live TradingView and show worldwide market capitalization with 24h change; verify both.
