@@ -418,7 +418,7 @@ function OrderPanel({ price, symbol, quote }: { price: number; symbol: string; q
             max={100}
             value={leverage}
             onChange={(e) => setLeverage(Number(e.target.value))}
-            className="w-full mt-2 accent-[oklch(0.78_0.16_210)]"
+            className="w-full mt-2 accent-primary"
           />
         </div>
       </div>
