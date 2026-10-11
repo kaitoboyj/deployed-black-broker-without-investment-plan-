@@ -11,4 +11,4 @@
 - [x] Upgrade Markets with terminal-style metrics, price chart, watchlist, filters and pagination; preserve existing trading navigation.
 - [x] Verify Markets interactions and presentation in the running preview.
 - [x] Replace Markets history chart with live TradingView and show worldwide market capitalization with 24h change; verify both.
-- [ ] Remove Markets live label, compact worldwide capitalization, and animate top-ten Market pulse with logos; verify.
+- [x] Remove Markets live label, compact worldwide capitalization, and animate top-ten Market pulse with logos; verify.
