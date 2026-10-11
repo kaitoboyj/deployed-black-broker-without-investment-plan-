@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowDownUp, ArrowUpRight, BarChart3, ChevronLeft, ChevronRight, CircleDollarSign, Download, Globe2, RefreshCw, Search, Star, TrendingUp } from "lucide-react";
-import { marketsQuery, formatUSD, formatCompact, formatPct, type Coin } from "@/lib/prices";
+import { marketsQuery, globalMarketQuery, formatUSD, formatCompact, formatPct, type Coin } from "@/lib/prices";
 import { Sparkline } from "@/components/Sparkline";
 import { MarketPriceChart } from "@/components/markets/MarketPriceChart";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ type Filter = "all" | "gainers" | "losers";
 
 function MarketsPage() {
   const { data, isLoading, isError, isFetching, refetch, dataUpdatedAt } = useQuery(marketsQuery(100));
+  const global = useQuery(globalMarketQuery);
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortKey>("market_cap");
@@ -67,11 +68,11 @@ function MarketsPage() {
     <div className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 lg:px-8">
       <header className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
         <div className="min-w-0"><div className="mb-2 flex items-center gap-2 text-[10px] font-medium uppercase text-muted-foreground"><Globe2 className="h-3 w-3" />Global markets<span className="text-primary">/ Overview</span></div><h1 className="text-2xl font-semibold sm:text-3xl">Market overview<span className="text-primary">.</span></h1></div>
-        <div className="flex shrink-0 items-center gap-3"><span className="hidden text-xs font-mono text-muted-foreground sm:block">{dataUpdatedAt ? `Updated ${new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Connecting"}</span><Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} aria-label="Refresh markets" title="Refresh markets"><RefreshCw className={cn(isFetching && "animate-spin")} /><span className="hidden sm:inline">Refresh</span></Button></div>
+        <div className="flex shrink-0 items-center gap-3"><span className="hidden text-xs font-mono text-muted-foreground sm:block">{dataUpdatedAt ? `Updated ${new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Connecting"}</span><Button variant="outline" size="sm" onClick={() => { void refetch(); void global.refetch(); }} disabled={isFetching || global.isFetching} aria-label="Refresh markets" title="Refresh markets"><RefreshCw className={cn(isFetching && "animate-spin")} /><span className="hidden sm:inline">Refresh</span></Button></div>
       </header>
       {isError && <div className="mb-5 flex items-center justify-between gap-3 border border-warning/30 bg-warning/5 p-3 text-sm text-warning">Market data is temporarily unavailable.<Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button></div>}
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric label="Market capitalization" value={data ? `$${formatCompact(totalCap)}` : "—"} note="Top 100 assets" icon={<Globe2 className="h-4 w-4" />} prices={btc?.sparkline_in_7d?.price} />
+        <Metric label="Global market capitalization" value={global.data ? formatUSD(global.data.marketCap, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : "—"} note={global.data ? `Worldwide · ${new Date(global.data.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}${global.isError ? " · Update delayed" : ""}` : global.isError ? "Global data unavailable" : "Connecting…"} icon={<Globe2 className="h-4 w-4" />} change={global.data?.change24h} />
         <Metric label="24h trading volume" value={data ? `$${formatCompact(totalVolume)}` : "—"} note="Top 100 assets" icon={<BarChart3 className="h-4 w-4" />} prices={assets[1]?.sparkline_in_7d?.price} />
         <Metric label="Bitcoin share" value={data && totalCap ? `${((btc?.market_cap ?? 0) / totalCap * 100).toFixed(2)}%` : "—"} note="Of tracked market cap" icon={<CircleDollarSign className="h-4 w-4" />} prices={btc?.sparkline_in_7d?.price} />
         <Metric label="Market breadth" value={data ? `${advancing} / ${assets.length}` : "—"} note="Assets advancing · 24h" icon={<TrendingUp className="h-4 w-4" />} prices={assets[2]?.sparkline_in_7d?.price} />
@@ -79,11 +80,11 @@ function MarketsPage() {
       <div className="mb-7 grid gap-4 lg:grid-cols-[minmax(0,1.9fr)_minmax(280px,1fr)]">
         <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4 sm:p-5">
-            <div className="flex min-w-0 items-center gap-3">{active && <img src={active.image} alt="" className="h-9 w-9 shrink-0 rounded-full" />}<div className="min-w-0"><select aria-label="Chart asset" value={active?.id ?? ""} onChange={(event) => setSelected(event.target.value)} className="max-w-full bg-surface font-semibold outline-none">{assets.map((coin) => <option key={coin.id} value={coin.id}>{coin.name} / USD</option>)}</select><div className="mt-1 flex items-center gap-2 text-[10px] uppercase text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-success" />Spot market<span className="text-border">|</span>Price history</div></div></div>
+            <div className="flex min-w-0 items-center gap-3">{active && <img src={active.image} alt="" className="h-9 w-9 shrink-0 rounded-full" />}<div className="min-w-0"><select aria-label="Chart asset" value={active?.id ?? ""} onChange={(event) => setSelected(event.target.value)} className="max-w-full bg-surface font-semibold outline-none">{assets.map((coin) => <option key={coin.id} value={coin.id}>{coin.name} / USD</option>)}</select><div className="mt-1 flex items-center gap-2 text-[10px] uppercase text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-success" />Spot market<span className="text-border">|</span>Live TradingView</div></div></div>
             <div className="text-right"><p className="font-mono text-lg font-medium sm:text-2xl">{active ? formatUSD(active.current_price) : "—"}</p><Change value={active?.price_change_percentage_24h} /></div>
           </div>
           <MarketPriceChart coin={active} />
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground"><span>USD · CoinGecko</span>{active && <Button asChild variant="link" size="sm" className="h-auto p-0"><Link to="/coin/$coinId" params={{ coinId: active.id }}>Trade {active.symbol.toUpperCase()}<ArrowUpRight /></Link></Button>}</div>
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground"><span>Chart · TradingView</span>{active && <Button asChild variant="link" size="sm" className="h-auto p-0"><Link to="/coin/$coinId" params={{ coinId: active.id }}>Trade {active.symbol.toUpperCase()}<ArrowUpRight /></Link></Button>}</div>
         </section>
         <aside className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex items-center justify-between border-b border-border p-3"><div className="flex gap-1">{(["leaders", "watchlist"] as const).map((value) => <Button key={value} size="sm" variant="ghost" onClick={() => setSideTab(value)} className={cn(sideTab === value ? "bg-primary/10 text-primary" : "text-muted-foreground")}>{value === "leaders" ? "Market leaders" : "My watchlist"}</Button>)}</div><Star className="h-4 w-4 text-muted-foreground" /></div>
@@ -110,6 +111,6 @@ function MarketsPage() {
   </div>;
 }
 function Change({ value, className }: { value?: number | null; className?: string }) { return <span className={cn("font-mono text-xs", value == null ? "text-muted-foreground" : value >= 0 ? "text-success" : "text-destructive", className)}>{formatPct(value)}</span>; }
-function Metric({ label, value, note, icon, prices }: { label: string; value: string; note: string; icon: React.ReactNode; prices?: number[] }) { return <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-4"><div className="mb-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span>{label}</span><span className="shrink-0 text-primary/70">{icon}</span></div><p className="relative z-10 font-mono text-xl font-medium sm:text-2xl">{value}</p><div className="mt-3 flex items-end justify-between gap-2"><span className="text-[10px] text-muted-foreground">{note}</span><Sparkline data={prices ?? []} up width={64} height={20} className="shrink-0 opacity-60" /></div></div>; }
+function Metric({ label, value, note, icon, prices, change }: { label: string; value: string; note: string; icon: React.ReactNode; prices?: number[]; change?: number }) { return <div className="relative overflow-hidden rounded-lg border border-border bg-surface p-4"><div className="mb-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span>{label}</span><span className="shrink-0 text-primary/70">{icon}</span></div><div className="relative z-10 flex flex-wrap items-center gap-2"><p className="min-w-0 break-all font-mono text-xl font-medium">{value}</p>{change != null && <span className="whitespace-nowrap"><Change value={change} /><span className="ml-1 text-[10px] text-muted-foreground">24h</span></span>}</div><div className="mt-3 flex items-end justify-between gap-2"><span className="text-[10px] text-muted-foreground">{note}</span><Sparkline data={prices ?? []} up width={64} height={20} className="shrink-0 opacity-60" /></div></div>; }
 function pick(c: Coin, key: SortKey) { return key === "price" ? c.current_price : key === "change" ? c.price_change_percentage_24h ?? 0 : key === "volume" ? c.total_volume : c.market_cap; }
 function SortTh({ label, k, sort, dir, onClick, className }: { label: string; k: SortKey; sort: SortKey; dir: "asc" | "desc"; onClick: (key: SortKey) => void; className?: string }) { return <th className={cn("px-3 text-right", className)}><Button variant="ghost" size="sm" onClick={() => onClick(k)} className={cn("h-auto gap-1 p-0 text-[10px] uppercase", sort === k ? "text-foreground" : "text-muted-foreground")}>{label}{sort === k ? <ArrowDown className={cn("size-3", dir === "asc" && "rotate-180")} /> : <ArrowDownUp className="size-3 opacity-40" />}</Button></th>; }
