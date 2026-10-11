@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import type { GlobalMarket } from "./global-market";
 
 export interface Coin {
   id: string;
@@ -32,6 +33,17 @@ export const marketsQuery = (perPage = 50) =>
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
+
+export const globalMarketQuery = queryOptions({
+  queryKey: ["global-crypto-market"],
+  queryFn: async (): Promise<GlobalMarket> => {
+    const response = await fetch("/api/markets?scope=global", { cache: "no-store" });
+    if (!response.ok) throw new Error("Global market data temporarily unavailable");
+    return response.json();
+  },
+  staleTime: 30_000,
+  refetchInterval: 30_000,
+});
 
 export function formatUSD(n: number, opts: Intl.NumberFormatOptions = {}) {
   if (!Number.isFinite(n)) return "$—";
