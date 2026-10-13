@@ -14,7 +14,8 @@
 - [x] Remove Markets live label, compact worldwide capitalization, and animate top-ten Market pulse with logos; verify.
 - [x] Upgrade News presentation with editorial feed, categories, search, saved articles and market sidebar without changing news sources.
 - [x] Verify News interactions and page presentation.
-- [ ] Upgrade Wallet and Swap presentation while preserving existing functionality.
-- [ ] Replace site logo, favicon, and social preview image; refine top-bar layout.
-- [ ] Verify Wallet, Swap, navigation, and branding across screen sizes.
-- [ ] Apply the reattached wallet design reference and supplied logo within the current visual upgrade.
+- [x] Upgrade Wallet and Swap presentation while preserving existing functionality.
+- [x] Replace site logo, favicon, and social preview image; refine top-bar layout.
+- [x] Verify public Wallet, Swap, navigation, and branding across screen sizes.
+- [x] Apply the reattached wallet design reference and supplied logo within the current visual upgrade.
+- [ ] Verify signed-in holdings and executable swap flow — blocked: no active wallet session available for this check.
