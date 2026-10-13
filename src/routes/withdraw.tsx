@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -15,6 +16,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/withdraw")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "Withdraw — Prime Capital Exchange" },
       { name: "description", content: "Withdraw the tokens and coins in your Prime Capital wallet." },
       { property: "og:title", content: "Withdraw — Prime Capital Exchange" },

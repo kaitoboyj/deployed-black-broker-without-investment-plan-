@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeftRight, Wallet } from "lucide-react";
@@ -8,6 +9,9 @@ import { SwapWidget } from "@/components/SwapWidget";
 export const Route = createFileRoute("/swap")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "Swap — PrimeCapital Cross-Chain" },
       { name: "description", content: "Bridge and swap tokens across chains directly from your self-custody wallet, powered by thirdweb Bridge." },
       { property: "og:title", content: "Cross-chain swap · PrimeCapital" },

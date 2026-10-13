@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -13,6 +14,9 @@ import { notify } from "@/lib/notify";
 export const Route = createFileRoute("/trade")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "Trade — PrimeCapital Terminal" },
       { name: "description", content: "Pro crypto trading terminal with live TradingView charts, order book, and market/limit orders." },
       { property: "og:title", content: "PrimeCapital Trading Terminal" },

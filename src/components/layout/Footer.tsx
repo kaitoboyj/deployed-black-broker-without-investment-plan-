@@ -1,3 +1,4 @@
+import { brandLogo } from "@/lib/brand";
 import { Link } from "@tanstack/react-router";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
@@ -8,9 +9,9 @@ export function Footer() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <img
-              src="/logo.png"
+              src={brandLogo}
               alt="PrimeCapital"
-              className="h-7 w-7 rounded-lg object-contain"
+              className="h-9 w-9 rounded-md object-contain"
             />
             <span className="font-display text-base font-semibold">Prime<span className="text-gradient">Capital</span></span>
           </div>

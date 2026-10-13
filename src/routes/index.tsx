@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -21,6 +22,7 @@ import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      ...brandPreviewMeta,
       { title: "PrimeCapital | Crypto Markets & Self-Custody Wallets" },
       { name: "description", content: "Explore live crypto markets, trading tools, and self-custody wallets with PrimeCapital." },
       { property: "og:title", content: "PrimeCapital | Crypto Markets & Self-Custody Wallets" },

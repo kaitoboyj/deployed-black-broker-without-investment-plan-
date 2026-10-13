@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/coin/$coinId")({
     const name = params.coinId.replace(/-/g, " ");
     return {
       meta: [
+      ...brandPreviewMeta,
         { title: `${name} chart — PrimeCapital` },
         { name: "description", content: `Live ${name} price chart and market stats.` },
         { property: "og:title", content: `${name} chart — PrimeCapital` },
