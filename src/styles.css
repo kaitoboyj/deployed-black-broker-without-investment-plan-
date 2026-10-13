@@ -313,3 +313,16 @@ a, button { transition: color .15s, background-color .15s, border-color .15s, bo
   .market-pulse-track, .market-pulse-coin::after { animation: none; }
   .market-pulse-window { overflow-x: auto; }
 }
+
+/* Wallet and exchange terminals share the existing semantic palette. */
+.wallet-terminal, .swap-terminal, .site-navigation { letter-spacing: 0; }
+.wallet-terminal h1, .wallet-terminal h2, .wallet-terminal h3,
+.swap-terminal h1, .swap-terminal h2, .swap-terminal h3 { letter-spacing: 0; }
+.wallet-terminal .font-mono, .swap-terminal .font-mono { font-variant-numeric: tabular-nums; }
+.wallet-terminal .glass { box-shadow: none; background: var(--surface); }
+.wallet-terminal .glass-strong { box-shadow: var(--shadow-elev); background: var(--card); }
+.allocation-tone-0 { color: var(--chart-1); }
+.allocation-tone-1 { color: var(--chart-3); }
+.allocation-tone-2 { color: var(--chart-4); }
+.allocation-tone-3 { color: var(--chart-5); }
+@media (max-width: 1023px) { .wallet-brand-stage { border-left: 0; } }

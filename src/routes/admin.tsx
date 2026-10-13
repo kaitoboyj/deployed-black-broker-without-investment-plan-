@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -57,7 +58,13 @@ const PRICE_SYMBOL: Record<string, string> = {
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "Admin" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
+      { title: "Admin — PrimeCapital" },
+      { name: "description", content: "Private PrimeCapital administration." },
+      { property: "og:title", content: "Admin — PrimeCapital" },
+      { property: "og:description", content: "Private PrimeCapital administration." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

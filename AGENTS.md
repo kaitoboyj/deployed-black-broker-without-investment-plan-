@@ -18,3 +18,6 @@
 - Markets asset panels consume the existing markets query; worldwide capitalization and its 24h change use CoinGecko global data separately, and the main chart uses a TradingView iframe feed to avoid presenting sampled history as streaming data.
 - Market pulse is a separate presentation component over the existing markets data; its pure ranking and compact-total helpers are tested so ticker selection and worldwide number formatting remain independently verifiable.
 - News presentation reuses the existing news query unchanged; categories are keyword-derived, source names come from article URLs, saved links are non-sensitive local preferences, and briefing dialogs show only supplied summaries with original-source links to avoid fabricated reporting or popularity claims.
+
+- Wallet holdings and allocation are presentation-only over the existing balances, token and markets data; never invent portfolio history or modify wallet transaction handlers for a design upgrade.
+- Site branding imports the shared brand asset; social preview images belong in leaf page metadata with an absolute public asset URL, while the favicon is a downscaled public file.

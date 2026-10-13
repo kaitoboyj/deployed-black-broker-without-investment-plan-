@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({ meta: [
+      ...brandPreviewMeta,
     { title: "Markets Terminal — PrimeCapital Exchange" },
     { name: "description", content: "Explore live crypto prices, interactive price history, market leaders and your watchlist in the PrimeCapital markets terminal." },
     { property: "og:title", content: "Markets Terminal — PrimeCapital Exchange" },

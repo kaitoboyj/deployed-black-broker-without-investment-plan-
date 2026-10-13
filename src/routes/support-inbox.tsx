@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Lock, MessageCircle, RefreshCw, Send } from "lucide-react";
@@ -15,6 +16,9 @@ import { DEFAULT_CHAT_LABEL, type ChatMode, type SupportMessage, type SupportThr
 export const Route = createFileRoute("/support-inbox")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "Support Inbox — PrimeCapital" },
       { name: "description", content: "Internal support inbox for PrimeCapital staff." },
       { name: "robots", content: "noindex, nofollow" },

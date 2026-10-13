@@ -10,7 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import logoAsset from "@/assets/primecapital-logo.png.asset.json";
+
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
@@ -77,22 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { name: "description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
-      { name: "theme-color", content: "#0b1024" },
+      { name: "theme-color", content: "#080808" },
       { property: "og:title", content: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { property: "og:description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "PrimeCapital Exchange — Institutional-grade crypto trading & self-custody" },
       { name: "twitter:description", content: "Trade 500+ crypto assets with pro tools, live TradingView charts, and generate BIP39 HD wallets in your browser. Real prices, real custody." },
-      { property: "og:image", content: "/logo.png" },
-      { name: "twitter:image", content: "/logo.png" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "icon", type: "image/png", href: "/favicon.png?v=20261012" },
+      { rel: "apple-touch-icon", href: "/favicon.png?v=20261012" },
     ],
   }),
   shellComponent: RootShell,

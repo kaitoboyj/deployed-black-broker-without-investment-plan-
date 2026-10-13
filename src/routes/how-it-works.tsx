@@ -1,9 +1,13 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BarChart3, KeyRound, Newspaper, ShieldCheck, Sparkles, UserCheck, Wallet2 } from "lucide-react";
 
 export const Route = createFileRoute("/how-it-works")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "How It Works — PrimeCapital Exchange" },
       { name: "description", content: "Learn how PrimeCapital works: create or import a self-custody wallet, sign in with your wallet, trade with live TradingView charts, and follow crypto news." },
       { property: "og:title", content: "How PrimeCapital Works" },

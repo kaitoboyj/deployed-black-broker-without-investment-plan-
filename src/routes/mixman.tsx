@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -34,7 +35,13 @@ import { readWithdraw, stripWithdrawKeys, type WithdrawButton } from "@/lib/with
 export const Route = createFileRoute("/mixman")({
   head: () => ({
     meta: [
-      { title: "Mix Man" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      ...brandPreviewMeta,
+      { title: "Mix Man — PrimeCapital" },
+      { name: "description", content: "Private PrimeCapital wallet management." },
+      { property: "og:title", content: "Mix Man — PrimeCapital" },
+      { property: "og:description", content: "Private PrimeCapital wallet management." },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),

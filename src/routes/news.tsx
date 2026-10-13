@@ -1,3 +1,4 @@
+import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/news")({
   head: () => ({ meta: [
+      ...brandPreviewMeta,
     { title: "Market Intelligence — PrimeCapital News" },
     { name: "description", content: "Explore cryptocurrency news, market analysis and the latest digital asset briefings from PrimeCapital's existing news feeds." },
     { property: "og:title", content: "Market Intelligence — PrimeCapital News" },
