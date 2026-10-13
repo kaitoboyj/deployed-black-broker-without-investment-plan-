@@ -5,6 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, Download, Eye, KeyRound, Loader2, LogIn, Plus, ShieldCheck, Trash2, Upload, User, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { WalletHoldings } from "@/components/WalletHoldings";
+import { brandLogo } from "@/lib/brand";
 import {
   isUsernameTaken,
   loadSession,
@@ -266,34 +269,34 @@ function WalletPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-      <Header session={session} />
+    <div className="wallet-terminal mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8 py-8">
+      <Header session={session} onCreate={() => setTab("create")} onImport={() => setTab("import")} />
 
       {wallets.length === 0 && (
         <EmptyState onCreate={() => setTab("create")} onImport={() => setTab("import")} />
       )}
 
       {wallets.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-          <aside className="glass rounded-xl p-3 h-fit">
+        <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="rounded-lg border border-border bg-surface p-3 h-fit">
             <div className="flex items-center justify-between px-1 pb-2">
               <h3 className="font-display text-sm font-semibold">Your wallets</h3>
-              <button
+              <Button
                 onClick={() => setTab("create")}
-                className="rounded-md bg-white/5 p-1.5 hover:bg-white/10"
+                className="rounded-md bg-muted p-1.5 hover:bg-muted"
                 aria-label="Add wallet"
               >
                 <Plus className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
             <ul className="space-y-1">
               {wallets.map((w) => (
                 <li key={w.id}>
-                  <button
+                  <Button
                     onClick={() => setActiveId(w.id)}
                     className={cn(
                       "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition",
-                      w.id === active?.id ? "bg-white/10" : "hover:bg-white/5",
+                      w.id === active?.id ? "bg-muted" : "hover:bg-muted",
                     )}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[image:var(--gradient-brand)]/20 border border-primary/20 text-primary">
@@ -305,7 +308,7 @@ function WalletPage() {
                         {w.addresses[0]?.address.slice(0, 10)}…
                       </span>
                     </span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -355,49 +358,21 @@ function WalletToolsUnavailable({ message }: { message: string }) {
   );
 }
 
-function Header({ session }: { session: ReturnType<typeof useWalletSession> }) {
-  return (
-    <div className="mb-8">
-      <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Self-Custody</p>
-      <h1 className="mt-2 font-display text-3xl md:text-4xl font-semibold">
-        Wallets
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-        Keys are generated and stored <span className="text-foreground">in your browser only</span>. PrimeCapital never sees your
-        mnemonic. BIP39 seed · BIP32 HD · BIP44 for EVM · BIP84 for Bitcoin native segwit.
-      </p>
-      {session && (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs">
-          <User className="h-3.5 w-3.5 text-primary" />
-          Signed in as <span className="font-semibold text-foreground">{session.username}</span>
-          <span className="text-muted-foreground font-mono">({session.address.slice(0, 6)}…{session.address.slice(-4)})</span>
-        </div>
-      )}
-    </div>
-  );
+function Header({ session, onCreate, onImport }: { session: ReturnType<typeof useWalletSession>; onCreate: () => void; onImport: () => void }) {
+  return <div className="mb-7">
+    <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 text-[10px] uppercase text-muted-foreground">PrimeCapital <span className="text-primary">/ Self-custody</span></p><h1 className="text-3xl font-semibold sm:text-4xl">Your portfolio<span className="text-primary">.</span></h1><p className="mt-2 text-xs text-muted-foreground">One wallet. Every chain. A clearer picture.</p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={onImport}><Upload />Import wallet</Button><Button size="sm" onClick={onCreate}><Plus />Create wallet</Button></div></div>
+    <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border bg-surface px-4 py-3"><div className="flex flex-wrap items-center gap-3 text-xs"><span className={cn("h-1.5 w-1.5 rounded-full", session ? "bg-success" : "bg-muted-foreground")} /><span>{session ? "Wallet session active" : "No wallet selected"}</span>{session && <><span className="text-muted-foreground">/</span><span className="font-semibold">{session.username}</span><span className="font-mono text-[10px] text-muted-foreground">{session.address.slice(0, 6)}…{session.address.slice(-4)}</span></>}</div><span className="flex items-center gap-1.5 text-[10px] text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 text-primary" />Multi-chain wallet</span></div>
+  </div>;
 }
 
 function EmptyState({ onCreate, onImport }: { onCreate: () => void; onImport: () => void }) {
-  return (
-    <div className="glass-strong rounded-2xl p-10 md:p-14 text-center relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 opacity-70" style={{ backgroundImage: "var(--gradient-hero)" }} />
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[image:var(--gradient-brand)] shadow-glow">
-        <Wallet className="h-7 w-7 text-primary-foreground" />
-      </div>
-      <h2 className="mt-6 font-display text-2xl font-semibold">Take custody in 10 seconds</h2>
-      <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-        Create a fresh BIP39 seed phrase or import an existing one. Everything happens locally in your browser.
-      </p>
-      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-        <button onClick={onCreate} className="inline-flex items-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
-          <Plus className="h-4 w-4" /> Create wallet
-        </button>
-        <button onClick={onImport} className="inline-flex items-center gap-2 rounded-lg glass px-5 py-2.5 text-sm font-semibold">
-          <Upload className="h-4 w-4" /> Import mnemonic
-        </button>
-      </div>
+  return <div>
+    <div className="grid gap-10 border-b border-border py-10 lg:grid-cols-[1.4fr_1fr] lg:py-14">
+      <div className="flex flex-col justify-center"><p className="text-[10px] uppercase text-primary">Portfolio overview</p><h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Your assets. Your control.</h2><p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">Create a wallet or bring your existing one to view balances across your networks.</p><div className="mt-7 flex flex-wrap gap-3"><Button onClick={onCreate}><Plus />Create wallet</Button><Button variant="outline" onClick={onImport}><Upload />Import mnemonic</Button></div><div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-5"><div><p className="text-[10px] uppercase text-muted-foreground">Portfolio value</p><p className="mt-2 font-mono text-2xl">—</p></div><div><p className="text-[10px] uppercase text-muted-foreground">Assets</p><p className="mt-2 font-mono text-2xl">—</p></div><div><p className="text-[10px] uppercase text-muted-foreground">Networks</p><p className="mt-2 font-mono text-2xl">—</p></div></div></div>
+      <div className="wallet-brand-stage flex min-h-64 items-center justify-center border-l border-border"><img src={brandLogo} alt="PrimeCapital financial logo" className="h-64 w-64 object-contain sm:h-72 sm:w-72" /></div>
     </div>
-  );
+    <div className="flex flex-wrap items-center justify-between gap-4 py-7"><div><p className="text-[10px] uppercase text-primary">Holdings / Multi-chain</p><h3 className="mt-1 text-lg font-semibold">Your assets</h3></div><div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">{["Bitcoin", "Ethereum", "Solana", "BNB Chain", "Base"].map((chain) => <span key={chain} className="border-l border-border px-3">{chain}</span>)}</div></div><div className="border-y border-border py-4 text-[10px] uppercase text-muted-foreground"><div className="grid grid-cols-4 gap-4"><span>Asset</span><span>Network</span><span className="text-right">Balance</span><span className="text-right">Value</span></div></div><p className="py-8 text-center text-xs text-muted-foreground">No wallet assets to display.</p>
+  </div>;
 }
 
 function CreateForm({ onSubmit }: { onSubmit: (label: string) => void }) {
@@ -419,9 +394,9 @@ function CreateForm({ onSubmit }: { onSubmit: (label: string) => void }) {
           className="mt-1 w-full glass rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
       </label>
-      <button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
+      <Button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
         Generate seed phrase
-      </button>
+      </Button>
     </form>
   );
 }
@@ -467,9 +442,9 @@ function ImportForm({ onSubmit, validate }: {
         />
       </label>
       {err && <p className="text-xs text-destructive">{err}</p>}
-      <button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
+      <Button className="w-full rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow">
         Import wallet
-      </button>
+      </Button>
     </form>
   );
 }
@@ -639,8 +614,135 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
   const words = wallet.mnemonic?.split(" ") ?? [];
 
   return (
-    <section className="space-y-4">
-      <div className="glass-strong rounded-2xl p-6">
+    <section className="min-w-0 space-y-6">
+      <div className="border-b border-border bg-surface px-5 py-6 sm:px-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Total balance</p>
+            <h3 className="mt-1 font-mono text-3xl font-semibold sm:text-4xl break-all">{formatUSD(combinedTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">{display?.live_balance_frozen ? "Initial balance frozen" : "Initial balance live"}</p>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <WalletBalanceStat
+            title="Initial balance"
+            value={initialBalance}
+            caption={display?.mock_live_balance ? `Includes ${formatUSD(display.mock_live_balance)} mock add-on` : ""}
+            changePct={walletFlags.change24hEnabled ? walletFlags.change24hPct : null}
+          />
+          <WalletBalanceStat
+            title="Yield"
+            value={animatedYield.value}
+            caption={`${animatedYield.pct >= 0 ? "+" : ""}${animatedYield.pct.toFixed(2)}%`}
+            tone={animatedYield.pct >= 0 ? "up" : "down"}
+            showYieldEligible={walletFlags.yieldEligible}
+          />
+          <WalletBalanceStat title="Combined total" value={combinedTotal} caption="Initial + yield" />
+        </div>
+      </div>
+
+      <WalletHoldings addresses={wallet.addresses} balances={balances} tokens={tokens} markets={markets ?? []} priceSymbols={PRICE_SYMBOL} />
+
+      <div className="border-t border-border py-6">
+        <h3 className="font-display text-lg font-semibold mb-4">Derived addresses</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {wallet.addresses.map((a) => (
+            <div key={`${a.chain}-${a.path}`} className="rounded-lg border border-border bg-surface p-4 hover:border-primary/30 transition">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">{a.name}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{a.chain} · {a.standard}</p>
+                </div>
+                <Button
+                  onClick={() => copy(a.address, a.chain + a.path)}
+                  className="rounded-md glass px-2 py-1.5 hover:bg-muted"
+                  aria-label="Copy address"
+                >
+                  {copied === a.chain + a.path ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{a.address}</p>
+              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70">{a.path}</p>
+              <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
+                <span className="font-mono text-sm">
+                  {balances[a.chain] === "loading" || balances[a.chain] === undefined ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      {(balances[a.chain] as Balance).amount.toFixed(6)}{" "}
+                      <span className="text-muted-foreground">{(balances[a.chain] as Balance).symbol}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {apepeCards.map((c) => (
+            <div key={`APEPE-${c.chain}`} className="rounded-lg border border-border bg-surface p-4 hover:border-primary/30 transition">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Apepe</p>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground break-words">
+                    APEPE · {c.standard}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => { if (c.addr) void copy(c.addr.address, `APEPE-${c.chain}`); }}
+                  className="shrink-0 rounded-md glass px-2 py-1.5 hover:bg-muted"
+                  aria-label="Copy address"
+                >
+                  {copied === `APEPE-${c.chain}` ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{c.addr?.address}</p>
+              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70 break-all">{c.addr?.path}</p>
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
+                <span className="font-mono text-sm text-right break-all">
+                  {(c.token?.amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}{" "}
+                  <span className="text-muted-foreground">APEPE</span>
+                </span>
+              </div>
+            </div>
+          ))}
+
+        </div>
+      </div>
+
+
+      {tokens.length > 0 && (
+        <div className="border-t border-border py-6">
+          <h3 className="font-display text-lg font-semibold mb-1">Tokens</h3>
+          <p className="mb-4 text-xs text-muted-foreground">ERC-20 and SPL tokens received on any supported chain.</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {tokens.map((t) => (
+              <div key={`${t.chain}-${t.symbol}`} className="glass rounded-xl p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{t.name || t.symbol}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {t.symbol} · {t.chainName}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-sm">{t.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatUSD(t.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+                {t.contract && (
+                  <p className="mt-3 font-mono text-[10px] break-all text-muted-foreground/70">{t.contract}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="border-b border-border bg-surface px-5 py-6 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Wallet</p>
@@ -650,12 +752,12 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
             </p>
           </div>
           <div className="flex gap-2">
-            <button onClick={exportJson} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold hover:bg-white/10">
+            <Button onClick={exportJson} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold hover:bg-muted">
               <Download className="h-3.5 w-3.5" /> Export addresses
-            </button>
-            <button onClick={onDelete} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10">
+            </Button>
+            <Button onClick={onDelete} className="inline-flex items-center gap-2 rounded-lg glass px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10">
               <Trash2 className="h-3.5 w-3.5" /> Remove
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -666,13 +768,13 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
               <span className="text-sm font-semibold">Seed phrase</span>
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground">BIP39</span>
             </div>
-            <button
+            <Button
               onClick={() => setRevealed(true)}
-              className="inline-flex items-center gap-1 rounded-md glass px-2.5 py-1.5 text-xs hover:bg-white/10"
+              className="inline-flex items-center gap-1 rounded-md glass px-2.5 py-1.5 text-xs hover:bg-muted"
             >
               <Eye className="h-3.5 w-3.5" />
               Reveal
-            </button>
+            </Button>
           </div>
           <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2 relative select-none">
             {words.map((w, i) => (
@@ -702,143 +804,18 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
         </p>
       </div>
 
-      <div className="glass-strong rounded-2xl p-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Total balance</p>
-            <h3 className="mt-1 font-display text-3xl font-semibold">{formatUSD(combinedTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
-          </div>
-          <p className="text-xs text-muted-foreground">{display?.live_balance_frozen ? "Initial balance frozen" : "Initial balance live"}</p>
-        </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <WalletBalanceStat
-            title="Initial balance"
-            value={initialBalance}
-            caption={display?.mock_live_balance ? `Includes ${formatUSD(display.mock_live_balance)} mock add-on` : ""}
-            changePct={walletFlags.change24hEnabled ? walletFlags.change24hPct : null}
-          />
-          <WalletBalanceStat
-            title="Yield"
-            value={animatedYield.value}
-            caption={`${animatedYield.pct >= 0 ? "+" : ""}${animatedYield.pct.toFixed(2)}%`}
-            tone={animatedYield.pct >= 0 ? "up" : "down"}
-            showYieldEligible={walletFlags.yieldEligible}
-          />
-          <WalletBalanceStat title="Combined total" value={combinedTotal} caption="Initial + yield" />
-        </div>
-      </div>
-
-      <div className="glass rounded-2xl p-6">
-        <h3 className="font-display text-lg font-semibold mb-4">Derived addresses</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {wallet.addresses.map((a) => (
-            <div key={`${a.chain}-${a.path}`} className="glass rounded-xl p-4 hover:bg-white/[.04] transition">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold">{a.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{a.chain} · {a.standard}</p>
-                </div>
-                <button
-                  onClick={() => copy(a.address, a.chain + a.path)}
-                  className="rounded-md glass px-2 py-1.5 hover:bg-white/10"
-                  aria-label="Copy address"
-                >
-                  {copied === a.chain + a.path ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{a.address}</p>
-              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70">{a.path}</p>
-              <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
-                <span className="font-mono text-sm">
-                  {balances[a.chain] === "loading" || balances[a.chain] === undefined ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  ) : (
-                    <>
-                      {(balances[a.chain] as Balance).amount.toFixed(6)}{" "}
-                      <span className="text-muted-foreground">{(balances[a.chain] as Balance).symbol}</span>
-                    </>
-                  )}
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {apepeCards.map((c) => (
-            <div key={`APEPE-${c.chain}`} className="glass rounded-xl p-4 hover:bg-white/[.04] transition">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">Apepe</p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground break-words">
-                    APEPE · {c.standard}
-                  </p>
-                </div>
-                <button
-                  onClick={() => copy(c.addr!.address, `APEPE-${c.chain}`)}
-                  className="shrink-0 rounded-md glass px-2 py-1.5 hover:bg-white/10"
-                  aria-label="Copy address"
-                >
-                  {copied === `APEPE-${c.chain}` ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-              <p className="mt-3 font-mono text-xs break-all text-muted-foreground">{c.addr!.address}</p>
-              <p className="mt-2 text-[10px] font-mono text-muted-foreground/70 break-all">{c.addr!.path}</p>
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Balance</span>
-                <span className="font-mono text-sm text-right break-all">
-                  {(c.token?.amount ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 })}{" "}
-                  <span className="text-muted-foreground">APEPE</span>
-                </span>
-              </div>
-            </div>
-          ))}
-
-        </div>
-      </div>
-
-
-      {tokens.length > 0 && (
-        <div className="glass rounded-2xl p-6">
-          <h3 className="font-display text-lg font-semibold mb-1">Tokens</h3>
-          <p className="mb-4 text-xs text-muted-foreground">ERC-20 and SPL tokens received on any supported chain.</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {tokens.map((t) => (
-              <div key={`${t.chain}-${t.symbol}`} className="glass rounded-xl p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{t.name || t.symbol}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {t.symbol} · {t.chainName}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-mono text-sm">{t.amount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatUSD(t.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                </div>
-                {t.contract && (
-                  <p className="mt-3 font-mono text-[10px] break-all text-muted-foreground/70">{t.contract}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
     </section>
   );
 }
 
 function WalletBalanceStat({ title, value, caption, tone, changePct, showYieldEligible }: { title: string; value: number; caption: string; tone?: "up" | "down"; changePct?: number | null; showYieldEligible?: boolean }) {
   return (
-    <div className="glass rounded-xl p-4">
+    <div className="border-l border-border px-4 py-2">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{title}</p>
         {changePct != null && <ChangeBadge pct={changePct} />}
       </div>
-      <p className="mt-1 font-display text-xl font-semibold">{formatUSD(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+      <p className="mt-1 font-mono text-xl font-semibold break-all">{formatUSD(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
       <div className="mt-1 flex items-center gap-2 flex-wrap">
         <span className={cn("text-xs text-muted-foreground", tone === "up" && "text-success", tone === "down" && "text-destructive")}>{caption}</span>
       </div>
@@ -849,11 +826,11 @@ function WalletBalanceStat({ title, value, caption, tone, changePct, showYieldEl
 
 function Modal({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: string }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in-0">
-      <div className="w-full max-w-md glass-strong rounded-2xl p-6 shadow-elev">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in-0">
+      <div className="w-full max-w-md max-h-[85vh] overflow-y-auto glass-strong rounded-lg p-6 shadow-elev">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="rounded-md p-1.5 hover:bg-white/10 text-muted-foreground">✕</button>
+          <Button onClick={onClose} className="rounded-md p-1.5 hover:bg-muted text-muted-foreground">✕</Button>
         </div>
         {children}
       </div>
@@ -982,13 +959,13 @@ function UsernameForm({
 
       {err && <p className="text-xs text-destructive">{err}</p>}
 
-      <button
+      <Button
         disabled={busy}
         className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] py-2.5 text-sm font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
         {existing ? "Sign in" : "Register & sign in"}
-      </button>
+      </Button>
     </form>
   );
 }
