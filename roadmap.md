@@ -17,3 +17,4 @@
 - [ ] Upgrade Wallet and Swap presentation while preserving existing functionality.
 - [ ] Replace site logo, favicon, and social preview image; refine top-bar layout.
 - [ ] Verify Wallet, Swap, navigation, and branding across screen sizes.
+- [ ] Apply the reattached wallet design reference and supplied logo within the current visual upgrade.
