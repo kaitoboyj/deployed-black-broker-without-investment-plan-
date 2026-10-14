@@ -326,3 +326,15 @@ a, button { transition: color .15s, background-color .15s, border-color .15s, bo
 .allocation-tone-2 { color: var(--chart-4); }
 .allocation-tone-3 { color: var(--chart-5); }
 @media (max-width: 1023px) { .wallet-brand-stage { border-left: 0; } }
+
+/* Home shares the terminal palette without decorative panel nesting. */
+.home-terminal { background: var(--background); }
+.home-terminal, .home-terminal h1, .home-terminal h2, .home-terminal h3 { letter-spacing: 0; }
+.home-terminal .font-mono { font-variant-numeric: tabular-nums; }
+.home-terminal .glass { border-radius: 8px; box-shadow: none; background: var(--surface); }
+.home-terminal .glass-strong { border-radius: 8px; background: var(--card); }
+.home-hero-image { object-position: center; }
+@media (max-width: 767px) {
+  .home-hero-image { object-position: 64% center; opacity: .3; }
+  .home-hero-copy { max-width: 32rem; }
+}

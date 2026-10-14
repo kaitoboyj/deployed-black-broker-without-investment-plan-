@@ -19,3 +19,6 @@
 - [x] Verify public Wallet, Swap, navigation, and branding across screen sizes.
 - [x] Apply the reattached wallet design reference and supplied logo within the current visual upgrade.
 - [ ] Verify signed-in holdings and executable swap flow — blocked: no active wallet session available for this check.
+- [x] Upgrade Home presentation while preserving existing features and branding.
+- [x] Review Netlify configuration and deployment instructions; verify Home navigation and screen sizes.
+- [ ] Verify deployed Netlify pages, APIs, and wallet actions — blocked: no Netlify deployment has been requested or provided.
