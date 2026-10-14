@@ -21,3 +21,5 @@
 
 - Wallet holdings and allocation are presentation-only over the existing balances, token and markets data; never invent portfolio history or modify wallet transaction handlers for a design upgrade.
 - Site branding imports the shared brand asset; social preview images belong in leaf page metadata with an absolute public asset URL, while the favicon is a downscaled public file.
+- Home presentation reuses the existing market queries and wallet handlers; label sampled sparklines as seven-day history so they are not mistaken for streaming charts.
+- Netlify uses the conditional Nitro Netlify preset, not a second deployment adapter, to preserve Lovable builds and avoid competing server outputs.

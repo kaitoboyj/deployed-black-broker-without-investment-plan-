@@ -1,5 +1,24 @@
 # Netlify Environment Variables Setup
 
+## Build and hosting configuration
+
+Connect the project repository to Netlify; the committed `netlify.toml` supplies the build settings:
+
+- Node.js 22.
+- Build command: `npm run build && node scripts/register-telegram-webhook.mjs`.
+- Publish directory: `dist`.
+- Nitro target: `netlify`, selected only for Netlify builds; Lovable preview keeps its own target.
+- Nitro generates the server function and route handling. Do not add a catch-all `/index.html` SPA redirect: pages and `/api/*` require the server.
+- Configure the variables below for both build and function runtime as appropriate. Only publishable browser configuration may use the `VITE_` prefix.
+
+The existing Nitro adapter is retained deliberately; adding the separate Netlify Vite adapter alongside it would create competing deployment outputs.
+
+## Deployment verification
+
+After the first Netlify deployment, check `/`, `/markets`, `/news`, `/wallet`, `/swap`, and `/trade`, including a direct refresh on each page. Check `/api/markets?per_page=5` and `/api/news` return data, then verify wallet actions using your own wallet session. If using Telegram, check the webhook registration and delivery against the Netlify domain. A working Lovable preview does not prove the Netlify deployment or its runtime secrets are configured.
+
+No Netlify deployment was performed as part of the home-page design update; deployed functions and wallet actions still require a hosted check.
+
 ## Required Environment Variables
 
 Add these variables in your Netlify dashboard:

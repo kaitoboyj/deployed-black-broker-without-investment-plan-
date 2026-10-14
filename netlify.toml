@@ -28,5 +28,7 @@ NITRO_PRESET = "netlify"
 for = "/*"
 [headers.values]
 X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "strict-origin-when-cross-origin"
 X-XSS-Protection = "1; mode=block"
 Content-Security-Policy = "default-src 'self' https: data: blob: 'unsafe-inline' 'unsafe-eval'; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https: wss: data: blob:; frame-src 'self' https:; worker-src 'self' blob:"
