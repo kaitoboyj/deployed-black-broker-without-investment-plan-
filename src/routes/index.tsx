@@ -1,3 +1,5 @@
+import homeFinance from "@/assets/home-finance.jpg";
+import { Button } from "@/components/ui/button";
 import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -36,15 +38,16 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   return (
-    <>
+    <div className="home-terminal">
       <Hero />
       <MarketTicker />
+      <HeroPreview />
       <HomeWalletBalances />
       <TrendingSection />
       <FeatureGrid />
       <StatsBand />
       <CTASection />
-    </>
+    </div>
   );
 }
 
@@ -294,120 +297,63 @@ function BalanceStat({ title, value, caption, tone, totalPct, changePct, showYie
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 -z-10" style={{ backgroundImage: "var(--gradient-hero)" }} />
-      <div className="absolute inset-0 -z-10 grid-bg opacity-60" />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-28 md:pb-32">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="mt-6 font-display text-[2rem] leading-[1.1] sm:text-5xl md:text-7xl font-semibold sm:leading-[1.02] tracking-tight break-words">
-            Trade crypto like a{" "}
-            <span className="text-gradient">professional.</span>
-            <br />
-            Custody it like a paranoid.
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-base sm:text-lg text-muted-foreground">
-            PrimeCapital combines an institutional trading terminal with a browser-native HD wallet.
-            Real prices. Real keys. No middleman.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to="/trade"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-brand)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition"
-            >
-              Launch Terminal <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/wallet"
-              className="inline-flex items-center justify-center gap-2 rounded-lg glass-strong px-6 py-3 text-sm font-semibold hover:bg-white/10 transition"
-            >
-              <Wallet2 className="h-4 w-4" /> Create a Wallet
-            </Link>
+    <section className="home-hero relative isolate overflow-hidden border-b border-border bg-background">
+      <img src={homeFinance} alt="" width={1920} height={1024} fetchPriority="high" className="home-hero-image pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover" />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="home-hero-copy max-w-2xl py-12 sm:py-16 lg:py-12 sm:py-16">
+          <div className="flex items-center gap-3 text-xs font-mono text-primary"><span className="h-px w-8 bg-primary" /> MARKETS. WALLET. EXCHANGE.</div>
+          <h1 className="mt-5 font-display text-4xl font-semibold leading-tight sm:text-6xl">PrimeCapital<span className="mt-2 block text-primary">Your next move.</span></h1>
+          <p className="mt-5 max-w-md text-base leading-relaxed text-muted-foreground">A sharper view of crypto. Explore the markets, open your trading terminal, and keep your wallet within reach.</p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button asChild size="lg"><Link to="/trade">Launch Terminal <ArrowUpRight /></Link></Button>
+            <Button asChild size="lg" variant="outline"><Link to="/wallet"><Wallet2 /> Create a Wallet</Link></Button>
+          </div>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" /> Market intelligence</span>
+            <span className="inline-flex items-center gap-2"><Lock className="h-4 w-4 text-primary" /> Browser-native wallets</span>
           </div>
         </div>
-
-        <HeroPreview />
+        <div className="flex items-center justify-between gap-4 border-t border-border py-4 text-xs">
+          <span className="font-mono text-muted-foreground">THE MARKET DOESN’T WAIT.</span>
+          <Link to="/markets" className="inline-flex items-center gap-2 text-primary">Explore markets <ArrowUpRight className="h-4 w-4" /></Link>
+        </div>
       </div>
     </section>
   );
 }
 
 function HeroPreview() {
-  const { data } = useQuery(marketsQuery(5));
+  const { data, isPending, isError, refetch } = useQuery(marketsQuery(5));
   const coins = data ?? [];
+  const primary = coins[0];
   return (
-    <div className="relative mx-auto mt-16 max-w-5xl">
-      <div className="absolute -inset-x-20 -top-10 h-64 bg-[image:var(--gradient-brand)] opacity-20 blur-3xl -z-10" />
-      <div className="glass-strong rounded-2xl p-4 md:p-6 shadow-elev">
-        <div className="flex items-center justify-between px-2 pb-4">
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
+    <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:px-8">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div><p className="text-xs font-mono text-primary">01 / MARKET SNAPSHOT</p><h2 className="mt-2 text-2xl font-semibold sm:text-3xl">An edge in every direction.</h2></div>
+        <Button asChild variant="outline" size="sm"><Link to="/trade">Open terminal <ArrowUpRight /></Link></Button>
+      </div>
+      <div className="grid border-y border-border lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="relative min-w-0 bg-surface py-6">
+          {primary ? <>
+            <div className="flex flex-wrap items-start justify-between gap-5 px-5 sm:px-7">
+              <div><div className="flex items-center gap-2"><img src={primary.image} alt="" width={28} height={28} className="h-7 w-7" /><span className="text-sm font-medium">{primary.name} <span className="font-mono text-muted-foreground">/ USDT</span></span></div><p className="mt-4 font-mono text-3xl font-semibold sm:text-4xl">{formatUSD(primary.current_price)}</p><div className="mt-2 flex items-center gap-2"><ChangeBadge pct={primary.price_change_percentage_24h} /><span className="text-xs text-muted-foreground">past 24 hours</span></div></div>
+              <div className="text-right text-xs text-muted-foreground"><p className="font-mono">7D PRICE HISTORY</p><p className="mt-3">Volume <span className="ml-2 font-mono text-foreground">${formatCompact(primary.total_volume)}</span></p><p className="mt-2">Market cap <span className="ml-2 font-mono text-foreground">${formatCompact(primary.market_cap)}</span></p></div>
             </div>
-            <span className="ml-3 text-xs text-muted-foreground font-mono">prime.terminal / BTC-USDT</span>
-          </div>
-          <div className="hidden sm:flex gap-1 text-xs text-muted-foreground">
-            {["1m", "5m", "15m", "1H", "4H", "1D"].map((t, i) => (
-              <span key={t} className={cn("rounded px-2 py-1", i === 3 && "bg-white/10 text-foreground")}>
-                {t}
-              </span>
-            ))}
-          </div>
+            <div className="mt-6 overflow-hidden"><Sparkline data={primary.sparkline_in_7d?.price ?? []} up={primary.price_change_percentage_24h >= 0} width={800} height={125} className="h-32 w-full" /></div>
+            <div className="mt-4 flex justify-between px-5 font-mono text-[10px] text-muted-foreground sm:px-7"><span>7 DAYS AGO</span><span>LATEST</span></div>
+          </> : <div className="flex min-h-72 items-center justify-center gap-3 text-sm text-muted-foreground">{isError ? <>Market data unavailable <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button></> : "Loading market data…"}</div>}
         </div>
-        <div className="grid gap-4 md:grid-cols-[1fr_260px]">
-          <div className="rounded-xl bg-black/40 p-4 h-72 md:h-80 relative overflow-hidden border border-white/5">
-            {coins[0] && (
-              <div className="absolute inset-0 flex flex-col p-5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground">BTC / USDT</p>
-                    <p className="mt-1 font-display text-4xl font-semibold">{formatUSD(coins[0].current_price)}</p>
-                    <p className={cn("mt-1 text-sm font-mono", coins[0].price_change_percentage_24h >= 0 ? "text-success" : "text-destructive")}>
-                      {formatPct(coins[0].price_change_percentage_24h)} · 24h
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground space-y-1">
-                    <p>Vol · {formatCompact(coins[0].total_volume)}</p>
-                    <p>Cap · {formatCompact(coins[0].market_cap)}</p>
-                  </div>
-                </div>
-                <div className="mt-auto -mx-5 -mb-5">
-                  <Sparkline
-                    data={coins[0].sparkline_in_7d?.price ?? []}
-                    up={coins[0].price_change_percentage_24h >= 0}
-                    width={800}
-                    height={140}
-                    className="w-full h-36"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="rounded-xl bg-black/30 border border-white/5 divide-y divide-white/5">
-            {coins.slice(0, 5).map((c) => {
-              const up = c.price_change_percentage_24h >= 0;
-              return (
-                <div key={c.id} className="flex items-center gap-3 px-3 py-3">
-                  <img src={c.image} alt="" className="h-6 w-6 rounded-full" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{c.symbol.toUpperCase()}</p>
-                    <p className="text-xs text-muted-foreground truncate">{c.name}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-mono">{formatUSD(c.current_price)}</p>
-                    <p className={cn("text-xs font-mono", up ? "text-success" : "text-destructive")}>
-                      {formatPct(c.price_change_percentage_24h)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="min-w-0 border-t border-border bg-background lg:border-l lg:border-t-0">
+          <div className="flex justify-between border-b border-border px-5 py-4 text-[10px] font-mono text-muted-foreground"><span>LEADING ASSETS</span><span>PRICE / 24H</span></div>
+          {coins.map(c => <Link key={c.id} to="/trade" className="flex items-center gap-3 border-b border-border/60 px-5 py-4 transition-colors last:border-0 hover:bg-accent">
+            <img src={c.image} alt="" width={30} height={30} className="h-8 w-8 rounded-full" />
+            <div className="min-w-0 flex-1"><p className="text-sm font-semibold">{c.symbol.toUpperCase()}</p><p className="truncate text-xs text-muted-foreground">{c.name}</p></div>
+            <div className="text-right font-mono"><p className="text-sm">{formatUSD(c.current_price)}</p><p className={cn("mt-1 text-xs", c.price_change_percentage_24h >= 0 ? "text-success" : "text-destructive")}>{formatPct(c.price_change_percentage_24h)}</p></div>
+          </Link>)}
+          {isPending && <div className="p-5 text-sm text-muted-foreground">Loading leading assets…</div>}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -415,11 +361,11 @@ function TrendingSection() {
   const { data, isLoading } = useQuery(marketsQuery(8));
   const coins = data ?? [];
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
-      <div className="flex items-end justify-between mb-8">
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Live Markets</p>
-          <h2 className="mt-2 font-display text-3xl md:text-4xl font-semibold">Trending right now</h2>
+          <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">02 / MARKET WATCH</p>
+          <h2 className="mt-2 font-display text-3xl md:text-4xl font-semibold">The market at a glance</h2>
         </div>
         <Link to="/markets" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
           All markets <ArrowUpRight className="h-4 w-4" />
@@ -436,13 +382,13 @@ function TrendingSection() {
 
 function TrendingCard({ coin }: { coin: any }) {
   if (!coin) {
-    return <div className="glass rounded-xl h-40 animate-pulse" />;
+    return <div className="border border-border bg-surface rounded-lg h-40 animate-pulse" />;
   }
   const up = coin.price_change_percentage_24h >= 0;
   return (
     <Link
       to="/trade"
-      className="group glass rounded-xl p-4 hover:bg-white/[.06] transition-all hover:-translate-y-0.5 relative overflow-hidden"
+      className="group border border-border bg-surface rounded-lg p-4 hover:border-primary/50 hover:bg-card transition-all relative overflow-hidden"
     >
       <div className="flex items-center gap-3">
         <img src={coin.image} alt="" className="h-8 w-8 rounded-full" />
@@ -499,9 +445,9 @@ const FEATURES = [
 
 function FeatureGrid() {
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       <div className="max-w-2xl">
-        <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Why PrimeCapital</p>
+        <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">03 / THE PRIMECAPITAL EDGE</p>
         <h2 className="mt-2 font-display text-3xl md:text-4xl font-semibold">
           Everything a trader needs.
           <br />
@@ -510,8 +456,8 @@ function FeatureGrid() {
       </div>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((f) => (
-          <div key={f.title} className="glass rounded-xl p-6 hover:bg-white/[.05] transition group">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[image:var(--gradient-brand)]/20 border border-primary/20 text-primary">
+          <div key={f.title} className="border-t border-border py-6 transition group">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-primary">
               <f.icon className="h-5 w-5" />
             </div>
             <h3 className="mt-4 font-display text-lg font-semibold">{f.title}</h3>
@@ -524,47 +470,23 @@ function FeatureGrid() {
 }
 
 function StatsBand() {
+  const { data } = useQuery(marketsQuery(100));
+  const coins = data ?? [];
   const stats = [
-    { k: "$142B+", v: "24h volume across venues" },
-    { k: "500+", v: "listed assets" },
-    { k: "7", v: "supported chains" },
-    { k: "0.01%", v: "maker fee, VIP tier" },
+    { label: "Assets in market feed", value: data ? String(coins.length) : "—" },
+    { label: "Advancing · past 24h", value: data ? String(coins.filter(coin => coin.price_change_percentage_24h > 0).length) : "—" },
+    { label: "Declining · past 24h", value: data ? String(coins.filter(coin => coin.price_change_percentage_24h < 0).length) : "—" },
+    { label: "Market refresh", value: "30 seconds" },
   ];
-  return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="glass-strong rounded-2xl p-8 md:p-10 grid gap-6 md:grid-cols-4 relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-secondary/30 blur-3xl" />
-        {stats.map((s) => (
-          <div key={s.k}>
-            <p className="font-display text-3xl md:text-4xl font-semibold text-gradient">{s.k}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{s.v}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+  return <section className="border-y border-border bg-surface"><div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:px-8">{stats.map(stat => <div key={stat.label}><p className="font-mono text-2xl font-semibold">{stat.value}</p><p className="mt-2 text-xs text-muted-foreground">{stat.label}</p></div>)}</div></section>;
 }
 
 function CTASection() {
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
-      <div className="relative overflow-hidden rounded-3xl glass-strong p-10 md:p-16 text-center">
-        <div className="absolute inset-0 -z-10 opacity-70" style={{ backgroundImage: "var(--gradient-hero)" }} />
-        <Zap className="mx-auto h-8 w-8 text-primary" />
-        <h2 className="mt-4 font-display text-3xl md:text-5xl font-semibold">
-          Ready when you are.
-        </h2>
-        <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-          Generate a wallet in under 10 seconds. Trade on the same page. No email required.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/wallet" className="rounded-lg bg-[image:var(--gradient-brand)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow">
-            Create a wallet
-          </Link>
-          <Link to="/markets" className="rounded-lg glass-strong px-6 py-3 text-sm font-semibold">
-            Explore markets
-          </Link>
-        </div>
+    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
+        <div><div className="mb-4 flex items-center gap-2 text-xs font-mono text-primary"><Zap className="h-4 w-4" /> YOUR NEXT CHAPTER</div><h2 className="text-3xl font-semibold sm:text-4xl">Ready when you are.</h2><p className="mt-3 max-w-lg text-muted-foreground">Your markets. Your wallet. All in one place.</p></div>
+        <div className="flex flex-wrap gap-3"><Button asChild size="lg"><Link to="/wallet">Create a wallet <ArrowUpRight /></Link></Button><Button asChild size="lg" variant="outline"><Link to="/markets">Explore markets</Link></Button></div>
       </div>
     </section>
   );
