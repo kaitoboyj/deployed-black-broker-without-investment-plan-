@@ -478,9 +478,8 @@ function StatsBand() {
     { label: "Assets in market feed", value: data ? String(coins.length) : "—" },
     { label: "Advancing · past 24h", value: data ? String(coins.filter(coin => coin.price_change_percentage_24h > 0).length) : "—" },
     { label: "Declining · past 24h", value: data ? String(coins.filter(coin => coin.price_change_percentage_24h < 0).length) : "—" },
-    { label: "Market refresh", value: "30 seconds" },
   ];
-  return <section className="border-y border-border bg-surface"><div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:px-8">{stats.map(stat => <div key={stat.label}><p className="font-mono text-2xl font-semibold">{stat.value}</p><p className="mt-2 text-xs text-muted-foreground">{stat.label}</p></div>)}</div></section>;
+  return <section className="border-y border-border bg-surface"><div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:px-8">{stats.map(stat => <div key={stat.label}><p className="font-mono text-2xl font-semibold">{stat.value}</p><p className="mt-2 text-xs text-muted-foreground">{stat.label}</p></div>)}</div></section>;
 }
 
 function CTASection() {
