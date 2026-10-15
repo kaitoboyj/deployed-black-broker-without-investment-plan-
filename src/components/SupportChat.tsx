@@ -272,6 +272,6 @@ export function SupportChat() {
         </div>
       )}
     </div>
-    </>
+    </div>
   );
 }
