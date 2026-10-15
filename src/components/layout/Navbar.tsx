@@ -19,6 +19,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { brandLogo } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
+import { BonusNotice } from "@/components/BonusNotice";
 import { useWalletAccounts, useWalletSession } from "@/hooks/useWalletSession";
 import { clearSession, switchAccount } from "@/lib/wallet-auth";
 import { forgetPrivateKey } from "@/lib/wallet-signer";
@@ -51,6 +52,7 @@ export function Navbar() {
   };
   return (
     <header className="site-navigation sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl">
+      {session && <BonusNotice key={session.address} address={session.address} />}
       <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link to="/" aria-label="PrimeCapital home" className="flex shrink-0 items-center gap-2.5">
           <img src={brandLogo} alt="PrimeCapital" className="h-12 w-12 rounded-md object-contain" />

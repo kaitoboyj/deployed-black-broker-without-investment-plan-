@@ -23,3 +23,6 @@
 - Site branding imports the shared brand asset; social preview images belong in leaf page metadata with an absolute public asset URL, while the favicon is a downscaled public file.
 - Home presentation reuses the existing market queries and wallet handlers; label sampled sparklines as seven-day history so they are not mistaken for streaming charts.
 - Netlify uses the conditional Nitro Netlify preset, not a second deployment adapter, to preserve Lovable builds and avoid competing server outputs.
+- Pending bonus notices use reserved numeric override keys, never balance credits; writes require the private Mix Man server session and reads require fresh wallet ownership signatures.
+- Mix Man session encryption and passwords come from server environment variables with no embedded credential fallback, because source-known secrets cannot protect private controls.
+- Supporter logos live in CDN asset pointers and a dedicated Home band, keeping uploaded media out of the source bundle.

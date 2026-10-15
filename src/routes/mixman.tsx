@@ -1,4 +1,5 @@
 import { brandPreviewMeta } from "@/lib/brand";
+import { BonusControl } from "@/components/BonusControl";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -254,6 +255,8 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         onSet={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "set", amount: n } }), `Total set to $${n}`)}
         onClear={() => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "clear" } }), "Total reverted to live")}
       />
+
+      <BonusControl key={walletAddress} address={walletAddress} />
 
       <FieldRow
         title="Yield balance (USD)"
