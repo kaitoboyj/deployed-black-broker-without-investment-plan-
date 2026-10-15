@@ -41,6 +41,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ### Other Required Variables
 ```
 ADMIN_PASSWORD=your_admin_password
+MIXMAN_SESSION_SECRET=your_random_secret_at_least_32_characters
+MIXMAN_PASSWORD=optional_separate_management_password
 THIRDWEB_CLIENT_ID=your_thirdweb_client_id
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_WEBHOOK_SECRET=your_strong_random_webhook_secret
@@ -59,6 +61,8 @@ TELEGRAM_CHAT_ID=-1003957750577
 - The `VITE_` prefix is critical for client-side access in Vite projects
 - Ensure no extra spaces in variable values
 - Never commit actual secrets to git
+- Mix Man now requires a private session secret and uses `MIXMAN_PASSWORD`, or `ADMIN_PASSWORD` if no separate password is set. Configure these in Netlify's function runtime; old sessions must unlock again.
+- Pending bonus notices use the existing wallet override table; no new migration is required. They do not transfer funds. The signed-in wallet must have its local signer available to read its private notice.
 - The service role key should be kept secure
 
 ### Withdrawal emails (Gmail)
