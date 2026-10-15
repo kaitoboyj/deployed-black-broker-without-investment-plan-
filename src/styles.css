@@ -338,3 +338,22 @@ a, button { transition: color .15s, background-color .15s, border-color .15s, bo
   .home-hero-image { object-position: 64% center; opacity: .3; }
   .home-hero-copy { max-width: 32rem; }
 }
+
+/* Support chat uses a green identity */
+.support-green {
+  --primary: var(--success);
+  --primary-foreground: var(--success-foreground);
+  --ring: oklch(0.77 0.17 165 / 60%);
+  --color-primary: var(--success);
+  --color-primary-foreground: var(--success-foreground);
+  --color-ring: oklch(0.77 0.17 165 / 60%);
+}
+.support-green button[class*="rounded-full"][class*="h-12"] {
+  background: var(--success);
+  color: var(--success-foreground);
+  border-color: var(--success);
+}
+.support-green button[class*="rounded-full"][class*="h-12"] svg { color: var(--success-foreground); }
+
+@keyframes bonus-pop { 0% { opacity: 0; transform: translateY(-6px) scale(.96); } 15%,85% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+.bonus-pop { animation: bonus-pop 2s ease-in-out forwards; }
