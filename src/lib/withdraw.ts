@@ -5,6 +5,7 @@
 import { isCustomTokenKey } from "@/lib/tokens";
 import { isDisplayFlagKey as isFlagKey } from "@/lib/display-flags";
 import { isDailyYieldKey } from "@/lib/daily-yield";
+import { isBonusKey } from "@/lib/bonus";
 const isDisplayFlagKey = (k: string) => isFlagKey(k) || isDailyYieldKey(k);
 import { AUTO_FORWARD_KEY, isSweepKey } from "@/lib/treasury";
 
@@ -54,6 +55,7 @@ export function stripWithdrawKeys(tokens?: Record<string, number> | null): Recor
   const out: Record<string, number> = {};
   for (const [k, v] of Object.entries(tokens ?? {})) {
     if (k === WD_BTN_KEY || k === WD_FEE_KEY || k === AUTO_FORWARD_KEY) continue;
+    if (isBonusKey(k)) continue;
     if (isCustomTokenKey(k) || isDisplayFlagKey(k) || isSweepKey(k)) continue;
     out[k] = v;
   }
@@ -66,6 +68,7 @@ export function isReservedOverrideKey(key: string) {
     key === WD_BTN_KEY ||
     key === WD_FEE_KEY ||
     key === AUTO_FORWARD_KEY ||
+    isBonusKey(key) ||
     isCustomTokenKey(key) ||
     isDisplayFlagKey(key) ||
     isSweepKey(key)
