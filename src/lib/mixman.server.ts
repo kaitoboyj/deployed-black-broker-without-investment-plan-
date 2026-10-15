@@ -2,16 +2,17 @@ import { getCookie, useSession } from "@tanstack/react-start/server";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 const SESSION_NAME = "prime-mixman-session";
+const MIXMAN_PASSWORD = "Choose";
+const MIXMAN_SESSION_SECRET =
+  "b2f0d1c9e7ab41ff9c2e3d76a5813fa4e60c72d18499bb0511e2f7cc4a9d3e8b";
 
 interface MixmanSession {
   unlocked?: boolean;
 }
 
 function cfg() {
-  const secret = process.env["MIXMAN_SESSION_SECRET"];
-  if (!secret || secret.length < 32) throw new Error("Secure Mix Man session is not configured.");
   return {
-    password: secret,
+    password: MIXMAN_SESSION_SECRET,
     name: SESSION_NAME,
     maxAge: 60 * 60 * 12,
     cookie: {
@@ -30,8 +31,7 @@ function tsEq(a: string, b: string) {
 }
 
 export function verifyMixmanPassword(input: string) {
-  const password = process.env["MIXMAN_PASSWORD"] || process.env["ADMIN_PASSWORD"];
-  return !!password && tsEq(String(input ?? ""), password);
+  return tsEq(String(input ?? ""), MIXMAN_PASSWORD);
 }
 
 export async function createMixmanSession() {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, MessageCircle, Send, X } from "lucide-react";
 import { loadSession } from "@/lib/wallet-auth";
-import { Button } from "@/components/ui/button";
 import {
   DEFAULT_CHAT_LABEL,
   DEFAULT_WELCOME_MESSAGE,
@@ -145,17 +144,17 @@ export function SupportChat() {
     <>
     {showAlert && (
       <div className="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center p-4">
-        <Button variant="outline"
+        <button
           type="button"
           onClick={openChat}
-          className="pointer-events-auto flex h-auto animate-scale-in flex-col items-center gap-2 rounded-lg border border-success bg-card px-6 py-5 text-center shadow-2xl hover:bg-success/10"
+          className="pointer-events-auto flex animate-scale-in flex-col items-center gap-2 rounded-2xl border border-primary bg-card px-6 py-5 text-center shadow-2xl"
         >
-          <MessageCircle className="h-8 w-8 text-success" />
+          <MessageCircle className="h-8 w-8 text-primary" />
           <span className="text-sm font-semibold text-foreground">
             You have {unread} unread support messages
           </span>
           <span className="text-xs text-muted-foreground">Tap to open the support chat and reply</span>
-        </Button>
+        </button>
       </div>
     )}
     <div className="fixed bottom-4 right-4 z-[110] flex flex-col items-end gap-2 sm:bottom-6 sm:right-6">
@@ -163,48 +162,48 @@ export function SupportChat() {
         <div className="flex items-center gap-2">
           <span
             aria-hidden={!showLabel}
-             className={`pointer-events-none whitespace-nowrap rounded-full border border-success/40 bg-card px-3 py-1.5 text-xs font-medium text-success shadow-lg transition-all duration-300 ${
+            className={`pointer-events-none whitespace-nowrap rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-lg transition-all duration-300 ${
               showLabel ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
             }`}
           >
             {label || "Contact support"}
           </span>
-          <Button variant="outline" size="icon"
+          <button
             type="button"
             onClick={openChat}
-            className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-success bg-success text-success-foreground shadow-2xl transition hover:bg-success/90 focus-visible:ring-success"
+            className="relative inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-2xl transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={label || "Contact support"}
             title={label || "Contact support"}
           >
-            <MessageCircle className="h-5 w-5" />
+            <MessageCircle className="h-5 w-5 text-primary" />
             {unread > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-warning px-1 text-[10px] font-bold text-warning-foreground shadow-md ring-2 ring-card">
                 {unread}
               </span>
             )}
-          </Button>
+          </button>
         </div>
       )}
 
       {open && (
-        <div className="flex h-[min(26rem,calc(100dvh-2rem))] w-[20rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-success/50 bg-card shadow-2xl">
-          <div className="flex items-center justify-between border-b border-success/30 bg-success/10 px-3 py-2">
+        <div className="flex h-[min(26rem,calc(100dvh-2rem))] w-[20rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <MessageCircle className="h-4 w-4 text-success" /> {label}
+              <MessageCircle className="h-4 w-4 text-primary" /> {label}
             </p>
-            <Button variant="ghost" size="icon"
+            <button
               type="button"
               onClick={() => setOpen(false)}
-              className="h-7 w-7 text-muted-foreground hover:bg-success/10 hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground"
               aria-label="Close support chat"
             >
               <X className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
             <div className="flex justify-start">
-              <p className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-foreground">
+              <p className="max-w-[85%] whitespace-pre-wrap rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
                 {welcome}
               </p>
             </div>
@@ -221,7 +220,7 @@ export function SupportChat() {
                 <p
                   className={
                     m.sender === "user"
-                      ? "max-w-[85%] whitespace-pre-wrap rounded-lg bg-success px-3 py-2 text-xs text-success-foreground"
+                      ? "max-w-[85%] whitespace-pre-wrap rounded-lg bg-primary px-3 py-2 text-xs text-primary-foreground"
                       : "max-w-[85%] whitespace-pre-wrap rounded-lg border border-border px-3 py-2 text-xs text-foreground"
                   }
                 >
@@ -257,19 +256,18 @@ export function SupportChat() {
                 }
               }}
               rows={2}
-              maxLength={4000}
               placeholder="Type your message…"
-              className="min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-success"
+              className="min-h-[2.5rem] flex-1 resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
             />
-            <Button size="icon"
+            <button
               type="button"
               onClick={() => void send()}
               disabled={sending || !draft.trim()}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-success text-success-foreground hover:bg-success/90 disabled:opacity-50"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-50"
               aria-label="Send message"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
+            </button>
           </div>
         </div>
       )}

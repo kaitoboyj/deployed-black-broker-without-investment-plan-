@@ -1,5 +1,4 @@
 import homeFinance from "@/assets/home-finance.jpg";
-import { Supporters } from "@/components/Supporters";
 import { Button } from "@/components/ui/button";
 import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -47,7 +46,6 @@ function HomePage() {
       <TrendingSection />
       <FeatureGrid />
       <StatsBand />
-      <Supporters />
       <CTASection />
     </div>
   );
