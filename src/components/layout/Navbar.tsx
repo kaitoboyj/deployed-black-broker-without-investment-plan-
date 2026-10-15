@@ -1,3 +1,4 @@
+import { BonusNotice } from "@/components/BonusNotice";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Check,
@@ -168,6 +169,7 @@ export function Navbar() {
           </Button>
         </div>
       </div>
+      <BonusNotice address={session?.address} />
       {open && (
         <div className="border-t border-border bg-surface lg:hidden">
           <nav aria-label="Mobile navigation" className="grid grid-cols-2 gap-2 p-4">
