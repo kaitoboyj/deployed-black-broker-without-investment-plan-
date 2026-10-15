@@ -1,3 +1,4 @@
+import { PartnersSection } from "@/components/PartnersSection";
 import homeFinance from "@/assets/home-finance.jpg";
 import { Button } from "@/components/ui/button";
 import { brandPreviewMeta } from "@/lib/brand";
@@ -46,6 +47,7 @@ function HomePage() {
       <TrendingSection />
       <FeatureGrid />
       <StatsBand />
+      <PartnersSection />
       <CTASection />
     </div>
   );

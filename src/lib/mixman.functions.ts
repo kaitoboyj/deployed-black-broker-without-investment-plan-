@@ -259,11 +259,13 @@ export const mixmanSetDisplayFlags = createServerFn({ method: "POST" })
     change24hEnabled?: boolean;
     change24hPct?: number;
     yieldEligible?: boolean;
+    bonus?: number;
   }) => ({
     wallet_address: normAddr(d?.wallet_address),
     change24hEnabled: d?.change24hEnabled,
     change24hPct: Number.isFinite(Number(d?.change24hPct)) ? Number(d?.change24hPct) : undefined,
     yieldEligible: d?.yieldEligible,
+    bonus: Number.isFinite(Number(d?.bonus)) ? Math.max(0, Number(d?.bonus)) : undefined,
   }))
   .handler(async ({ data }) => {
     await requireMixmanUnlocked();
@@ -278,6 +280,7 @@ export const mixmanSetDisplayFlags = createServerFn({ method: "POST" })
       change24hEnabled: data.change24hEnabled,
       change24hPct: data.change24hPct,
       yieldEligible: data.yieldEligible,
+      bonus: data.bonus,
     });
     const { error } = await supabaseAdmin
       .from("wallet_balance_overrides")
