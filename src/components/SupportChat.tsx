@@ -141,7 +141,7 @@ export function SupportChat() {
   if (!shouldShowChat(mode, total)) return null;
 
   return (
-    <>
+    <div className="support-green contents">
     {showAlert && (
       <div className="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center p-4">
         <button
