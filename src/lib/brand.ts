@@ -1,15 +1,16 @@
-import logo from "@/assets/primecapital-logo.jpg.asset.json";
+// Served from /public so it works on every host (Netlify, Lovable, local).
+export const brandLogo = "/brand-logo.jpg";
 
-export const brandLogo = logo.url;
-// Stable public asset path, shared by page-specific social previews.
+function siteOrigin() {
+  if (typeof window !== "undefined") return window.location.origin;
+  return "https://pmcexchange.netlify.app";
+}
+
+// Social previews need an absolute URL.
 export const brandPreviewMeta = [
-  {
-    property: "og:image",
-    content: `https://id-preview--1837dff1-1cd3-4b45-8db0-6bb76f75aae5.lovable.app${logo.url}`,
-  },
-  {
-    name: "twitter:image",
-    content: `https://id-preview--1837dff1-1cd3-4b45-8db0-6bb76f75aae5.lovable.app${logo.url}`,
-  },
+  { property: "og:image", content: `https://pmcexchange.netlify.app${brandLogo}` },
+  { name: "twitter:image", content: `https://pmcexchange.netlify.app${brandLogo}` },
   { property: "og:image:alt", content: "PrimeCapital orange and silver financial logo" },
 ];
+
+export { siteOrigin };
