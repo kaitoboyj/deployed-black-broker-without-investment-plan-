@@ -27,6 +27,7 @@ import { setBalanceOverride } from "@/lib/admin.functions";
 import { WithdrawButtonControl } from "@/components/WithdrawButtonControl";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
 import { DisplayFlagsControl } from "@/components/DisplayFlagsControl";
+import { BonusControl } from "@/components/BonusControl";
 import { DailyYieldControl } from "@/components/DailyYieldControl";
 import { setDailyYield } from "@/lib/daily-yield.functions";
 import { readDisplayFlags, type DisplayFlags } from "@/lib/display-flags";
@@ -300,6 +301,14 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
       />
 
 
+
+      <BonusControl
+        current={readDisplayFlags(override?.token_overrides).bonus}
+        onSet={async (bonus: number) => {
+          await setFlags({ data: { wallet_address: walletAddress, bonus } });
+          await refresh();
+        }}
+      />
 
       <CustomTokenEditor
         tokens={override?.token_overrides}

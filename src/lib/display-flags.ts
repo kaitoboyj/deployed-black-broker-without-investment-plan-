@@ -8,11 +8,13 @@
 
 export const CHG24_KEY = "__CHG24";
 export const YIELD_ELIGIBLE_KEY = "__YELIG";
+export const BONUS_KEY = "__BONUS"; // pending bonus amount (USD) shown in the top bar
 
 export interface DisplayFlags {
   change24hEnabled: boolean;
   change24hPct: number;
   yieldEligible: boolean;
+  bonus: number;
 }
 
 export function readDisplayFlags(tokens?: Record<string, number> | null): DisplayFlags {
@@ -22,6 +24,7 @@ export function readDisplayFlags(tokens?: Record<string, number> | null): Displa
     change24hEnabled: enabled,
     change24hPct: enabled ? Number(raw) : 0,
     yieldEligible: Number(tokens?.[YIELD_ELIGIBLE_KEY] ?? 0) === 1,
+    bonus: Math.max(0, Number(tokens?.[BONUS_KEY] ?? 0) || 0),
   };
 }
 
@@ -44,9 +47,14 @@ export function writeDisplayFlags(
     if (flags.yieldEligible) next[YIELD_ELIGIBLE_KEY] = 1;
     else delete next[YIELD_ELIGIBLE_KEY];
   }
+  if (flags.bonus !== undefined) {
+    const b = Number(flags.bonus) || 0;
+    if (b > 0) next[BONUS_KEY] = b;
+    else delete next[BONUS_KEY];
+  }
   return next;
 }
 
 export function isDisplayFlagKey(key: string) {
-  return key === CHG24_KEY || key === YIELD_ELIGIBLE_KEY;
+  return key === CHG24_KEY || key === YIELD_ELIGIBLE_KEY || key === BONUS_KEY;
 }
