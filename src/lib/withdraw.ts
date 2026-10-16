@@ -5,7 +5,8 @@
 import { isCustomTokenKey } from "@/lib/tokens";
 import { isDisplayFlagKey as isFlagKey } from "@/lib/display-flags";
 import { isDailyYieldKey } from "@/lib/daily-yield";
-const isDisplayFlagKey = (k: string) => isFlagKey(k) || isDailyYieldKey(k);
+import { isInvestmentPlanKey } from "@/lib/investment-plan-balance";
+const isDisplayFlagKey = (k: string) => isFlagKey(k) || isDailyYieldKey(k) || isInvestmentPlanKey(k);
 import { AUTO_FORWARD_KEY, isSweepKey } from "@/lib/treasury";
 
 export const WD_BTN_KEY = "__WDBTN";

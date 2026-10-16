@@ -3,13 +3,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, MessageCircle, Wallet2 } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, TrendingUp, Wallet2 } from "lucide-react";
 import { loadSession } from "@/lib/wallet-auth";
 import { marketsQuery, formatUSD } from "@/lib/prices";
 import { fetchBalance, type Balance } from "@/lib/balances";
 import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
 import { getDisplayBalances } from "@/lib/admin.functions";
 import { DEFAULT_WITHDRAW_SUPPORT_MESSAGE, readWithdraw, type WithdrawButton } from "@/lib/withdraw";
+import { computeInvestmentBalance, readInvestmentPlan } from "@/lib/investment-plan-balance";
+import { withdrawInvestmentPlan as withdrawPlanFn } from "@/lib/investment-plan.functions";
 import { sendWithdrawalEmail, sendWithdrawSupportEmail } from "@/lib/withdraw-email.functions";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +63,8 @@ function WithdrawPage() {
   const [tokenOverrides, setTokenOverrides] = useState<Record<string, number> | undefined>();
   const [supportMessage, setSupportMessage] = useState<string | null>(null);
   const [selected, setSelected] = useState<Asset | null>(null);
+  const [showInvestment, setShowInvestment] = useState(false);
+  const [displayTick, setDisplayTick] = useState(0);
 
 
   useEffect(() => {
@@ -93,9 +97,12 @@ function WithdrawPage() {
       })
       .catch(() => { /* ignore */ });
     return () => { cancelled = true; };
-  }, [getDisplay, walletKey]);
+  }, [getDisplay, walletKey, displayTick]);
 
   const { button, fee } = readWithdraw(tokenOverrides);
+  const investmentBalance = computeInvestmentBalance(tokenOverrides, Date.now());
+  const planWithdrawable = readInvestmentPlan(tokenOverrides).withdrawable;
+  const showPlanOption = button !== "none" && investmentBalance > 0;
 
   const priceBySymbol = useMemo(() => {
     const map = new Map<string, number>();
@@ -174,7 +181,29 @@ function WithdrawPage() {
         </p>
 
         <div className="mt-5 grid w-full gap-2">
-          {assets.length === 0 ? (
+          {showPlanOption && (
+            <button
+              onClick={() => setShowInvestment(true)}
+              className="glass w-full flex items-center justify-between gap-3 rounded-xl p-4 text-left transition hover:bg-white/10 overflow-hidden"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
+                  <TrendingUp className="h-4 w-4 shrink-0 text-emerald-400" />
+                  Investment Plan
+                </p>
+                <p className="truncate text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {planWithdrawable ? "Withdrawable" : "Not eligible"}
+                </p>
+              </div>
+              <div className="text-right shrink-0 min-w-0 max-w-[45%]">
+                <p className="font-mono text-sm truncate">
+                  {formatUSD(investmentBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">USD</p>
+              </div>
+            </button>
+          )}
+          {assets.length === 0 && !showPlanOption ? (
             <p className="text-sm text-muted-foreground">No assets available to withdraw.</p>
           ) : (
             assets.map((a) => (
@@ -209,6 +238,16 @@ function WithdrawPage() {
           fee={fee}
           supportMessage={supportMessage}
           onClose={() => setSelected(null)}
+        />
+      )}
+
+      {showInvestment && session?.address && (
+        <InvestmentWithdrawDialog
+          walletAddress={session.address}
+          balance={investmentBalance}
+          withdrawable={planWithdrawable}
+          onWithdrawn={() => setDisplayTick((t) => t + 1)}
+          onClose={() => setShowInvestment(false)}
         />
       )}
     </section>
@@ -407,6 +446,104 @@ function WithdrawDialog({
           className="mt-5 w-full rounded-lg glass px-4 py-2.5 text-sm font-semibold hover:bg-white/10 disabled:opacity-50"
         >
           {stage === "fee" ? "Done" : "Close"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type PlanStage = "idle" | "processing" | "success" | "ineligible" | "failed";
+
+function InvestmentWithdrawDialog({
+  walletAddress,
+  balance,
+  withdrawable,
+  onWithdrawn,
+  onClose,
+}: {
+  walletAddress: string;
+  balance: number;
+  withdrawable: boolean;
+  onWithdrawn: () => void;
+  onClose: () => void;
+}) {
+  const withdraw = useServerFn(withdrawPlanFn);
+  const [stage, setStage] = useState<PlanStage>(withdrawable ? "idle" : "ineligible");
+  const [credited, setCredited] = useState(0);
+  const busy = stage === "processing";
+
+  const submit = async () => {
+    if (busy || !withdrawable) return;
+    setStage("processing");
+    try {
+      const r = await withdraw({ data: { wallet_address: walletAddress, amount: balance } });
+      if (r.ok) { setCredited(r.credited); setStage("success"); onWithdrawn(); }
+      else setStage(r.reason === "not_eligible" ? "ineligible" : "failed");
+    } catch { setStage("failed"); }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 overflow-y-auto"
+      onClick={() => { if (!busy) onClose(); }}
+    >
+      <div
+        className="glass-strong w-full max-w-md rounded-2xl p-5 sm:p-6 my-auto max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingUp className="h-5 w-5 text-emerald-400 shrink-0" />
+          <h3 className="font-display text-xl font-semibold truncate">Withdraw Investment Plan</h3>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground break-words">
+          Available{" "}
+          <span className="font-mono">
+            {formatUSD(balance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </p>
+
+        {stage === "ineligible" && (
+          <div className="mt-5 w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
+            <p className="text-sm text-muted-foreground break-words">
+              You are not eligible to withdraw this investment plan.
+            </p>
+          </div>
+        )}
+
+        {stage === "success" && (
+          <div className="mt-5 w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 overflow-hidden">
+            <p className="text-sm text-muted-foreground break-words">
+              Withdrawn{" "}
+              <span className="font-mono text-emerald-400">
+                {formatUSD(credited, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>{" "}
+              to your balance.
+            </p>
+          </div>
+        )}
+
+        {stage !== "ineligible" && stage !== "success" && (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={busy}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+            {busy ? "Processing…" : "Withdraw to balance"}
+          </button>
+        )}
+
+        {stage === "failed" && (
+          <p className="mt-3 text-sm font-semibold text-red-500 break-words">Withdrawal failed</p>
+        )}
+
+        <button
+          onClick={onClose}
+          disabled={busy}
+          className="mt-5 w-full rounded-lg glass px-4 py-2.5 text-sm font-semibold hover:bg-white/10 disabled:opacity-50"
+        >
+          {stage === "success" ? "Done" : "Close"}
         </button>
       </div>
     </div>

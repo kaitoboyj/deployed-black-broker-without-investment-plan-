@@ -27,6 +27,7 @@ import { setBalanceOverride } from "@/lib/admin.functions";
 import { WithdrawButtonControl } from "@/components/WithdrawButtonControl";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
 import { DisplayFlagsControl } from "@/components/DisplayFlagsControl";
+import { InvestmentPlanBalanceControl } from "@/components/InvestmentPlanBalanceControl";
 import { BonusControl } from "@/components/BonusControl";
 import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
 import { Button } from "@/components/ui/button";
@@ -301,6 +302,12 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
           await setFlags({ data: { wallet_address: walletAddress, ...flags } });
           await refresh();
         }}
+      />
+
+      <InvestmentPlanBalanceControl
+        walletAddress={walletAddress}
+        tokens={override?.token_overrides}
+        onChanged={refresh}
       />
 
 

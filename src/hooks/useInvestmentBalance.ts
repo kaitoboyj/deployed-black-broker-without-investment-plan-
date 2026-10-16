@@ -7,6 +7,11 @@ import { fetchBalance } from "@/lib/balances";
 import { fetchWalletTokens } from "@/lib/tokens";
 import { marketsQuery } from "@/lib/prices";
 import { computeAccruedYield, readDailyYieldRate, readDailyYieldStart } from "@/lib/daily-yield";
+import {
+  computeInvestmentBalance,
+  investmentGainPct,
+  readInvestmentPlan,
+} from "@/lib/investment-plan-balance";
 
 const priceSymbols: Record<string, string> = {
   BTC: "btc", BTC_LEGACY: "btc", ETH: "eth", BASE: "eth", BNB: "bnb", MATIC: "pol",
@@ -44,5 +49,18 @@ export function useInvestmentBalance() {
     ? display.frozen_live_balance : realTotal + (display?.mock_live_balance ?? 0);
   const accrued = computeAccruedYield(initial, readDailyYieldRate(display?.token_overrides), readDailyYieldStart(display?.token_overrides), Date.now());
   const yieldDisplay = useYieldDisplay((display?.yield_balance ?? 0) + accrued);
-  return { session, balance: initial + yieldDisplay.value, loading: Boolean(address) && (portfolio.isPending || markets.isPending), error: Boolean(address) && (portfolio.isError || markets.isError) };
+  const walletBalance = initial + yieldDisplay.value;
+  const now = Date.now();
+  const plan = readInvestmentPlan(display?.token_overrides);
+  const investmentBalance = computeInvestmentBalance(display?.token_overrides, now);
+  const gainPct = investmentGainPct(display?.token_overrides, now);
+  return {
+    session,
+    loading: Boolean(address) && (portfolio.isPending || markets.isPending),
+    error: Boolean(address) && (portfolio.isError || markets.isError),
+    // Main balance available to spend — plan amounts are deducted from it.
+    walletBalance,
+    balance: Math.max(0, walletBalance - plan.principal),
+    investment: { ...plan, currentBalance: investmentBalance, gainPct },
+  };
 }

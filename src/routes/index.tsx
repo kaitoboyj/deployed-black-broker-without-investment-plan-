@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { getDisplayBalances } from "@/lib/admin.functions";
 import { useYieldDisplay } from "@/hooks/useYieldDisplay";
 import { readWithdraw } from "@/lib/withdraw";
+import { readInvestmentPlan } from "@/lib/investment-plan-balance";
 import { readDisplayFlags } from "@/lib/display-flags";
 import { YieldEligibleNote } from "@/components/YieldEligibleNote";
 import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
@@ -137,7 +138,8 @@ function HomeWalletBalances() {
     ? display.frozen_live_balance
     : realTotal + (display?.mock_live_balance ?? 0);
   const animatedYield = useYieldDisplay(display?.yield_balance ?? 0);
-  const total = initialBalance + animatedYield.value;
+  const invested = readInvestmentPlan(display?.token_overrides).principal;
+  const total = Math.max(0, initialBalance + animatedYield.value - invested);
   const flags = readDisplayFlags(display?.token_overrides);
 
   if (!session?.wallet || addresses.length === 0) return null;
@@ -169,7 +171,7 @@ function HomeWalletBalances() {
             totalPct={initialBalance > 0 ? (animatedYield.value / initialBalance) * 100 : 0}
             showYieldEligible={flags.yieldEligible}
           />
-          <BalanceStat title="Combined total" value={total} caption="Initial + yield" />
+          <BalanceStat title="Combined total" value={total} caption={invested > 0 ? "Initial + yield − plans" : "Initial + yield"} />
         </div>
         <WithdrawCta
           tokens={display?.token_overrides}

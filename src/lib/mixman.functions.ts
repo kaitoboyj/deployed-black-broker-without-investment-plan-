@@ -77,7 +77,7 @@ export const mixmanGetOverride = createServerFn({ method: "POST" })
   });
 
 // Apply an add/subtract adjustment to the override for the given wallet.
-// field: "total" | "yield" | "mock_live" | "token:<SYMBOL>"
+// field: "total" | "yield" | "mock_live" | "investment" | "token:<SYMBOL>"
 export const mixmanAdjust = createServerFn({ method: "POST" })
   .inputValidator((d: { wallet_address: string; field: string; op: "add" | "sub" | "set" | "clear"; amount?: number }) => ({
     wallet_address: normAddr(d?.wallet_address),
@@ -122,6 +122,15 @@ export const mixmanAdjust = createServerFn({ method: "POST" })
     } else if (data.field === "mock_live") {
       const v = apply(cur.mock_live_balance) ?? 0;
       cur.mock_live_balance = data.op === "clear" ? 0 : Math.max(0, Number(v));
+    } else if (data.field === "investment") {
+      const { computeInvestmentBalance, setInvestmentBalance, isInvestmentPlanKey } = await import("./investment-plan-balance");
+      if (data.op === "clear") {
+        for (const key of Object.keys(cur.token_overrides)) if (isInvestmentPlanKey(key)) delete cur.token_overrides[key];
+      } else {
+        const current = computeInvestmentBalance(cur.token_overrides, Date.now());
+        const v = apply(current) ?? 0;
+        Object.assign(cur.token_overrides, setInvestmentBalance(cur.token_overrides, Math.max(0, Number(v)), Date.now()));
+      }
     } else if (data.field.startsWith("token:")) {
       const sym = data.field.slice(6).toUpperCase().slice(0, 12);
       if (!sym) throw new Error("Missing token symbol");

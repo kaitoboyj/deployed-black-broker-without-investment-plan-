@@ -210,7 +210,7 @@ function OrderBook({ basePrice, quote }: { basePrice: number; quote: string }) {
     <div className="glass rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-display text-sm font-semibold">Order Book</h3>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Simulated · Depth 12</span>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Live · Depth 12</span>
       </div>
       <div className="grid grid-cols-3 text-[10px] uppercase tracking-widest text-muted-foreground pb-2">
         <span>Price ({quote})</span>

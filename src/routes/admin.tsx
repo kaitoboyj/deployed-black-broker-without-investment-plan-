@@ -30,6 +30,7 @@ import { readDisplayFlags, type DisplayFlags } from "@/lib/display-flags";
 import { readWithdraw, stripWithdrawKeys, isReservedOverrideKey, type WithdrawButton } from "@/lib/withdraw";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
 import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
+import { InvestmentPlanBalanceControl } from "@/components/InvestmentPlanBalanceControl";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { useWalletSession } from "@/hooks/useWalletSession";
@@ -637,6 +638,13 @@ function WalletRow({ row, onSaved }: { row: AdminWalletRow; onSaved: () => void 
         />
       </div>
 
+      <div className="mt-4">
+        <InvestmentPlanBalanceControl
+          walletAddress={row.wallet_address}
+          tokens={row.override?.token_overrides}
+          onChanged={onSaved}
+        />
+      </div>
 
       <div className="mt-3 flex items-center justify-end gap-3">
         {err && <p className="text-xs text-destructive">{err}</p>}
