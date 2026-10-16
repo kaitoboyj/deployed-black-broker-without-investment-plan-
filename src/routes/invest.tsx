@@ -250,13 +250,13 @@ function InvestmentPage() {
                   return (
                     <article
                       key={plan.id}
-                      aria-label={`$${plan.amount} · ${plan.label}`}
+                      aria-label={`$${plan.amount} · ${plan.name ? `${plan.name} · ` : ""}${plan.label}`}
                       className={`rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/50 ${off ? "opacity-50" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <Clock3 className="h-3.5 w-3.5" />
-                          {plan.label}
+                          {plan.name ? `${plan.name} · ${plan.label}` : plan.label}
                         </span>
                         <span className="rounded-md bg-success/10 px-2 py-1 text-xs font-medium text-success">
                           Target APY {plan.targetApy}%
@@ -368,6 +368,12 @@ function InvestmentPage() {
                 </>
               ) : (
                 <>
+                  {selected.name && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Tier</dt>
+                      <dd className="font-medium text-primary">{selected.name}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <dt className="text-muted-foreground">Duration</dt>
                     <dd>{selected.label}</dd>

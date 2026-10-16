@@ -1,10 +1,12 @@
-export type PlanTerm = "short" | "mid" | "long";
+export type PlanTerm = "short" | "mid" | "long" | "premium";
 export interface InvestmentPlan {
   id: string;
   term: PlanTerm;
   amount: number;
   duration: string;
   label: string;
+  /** Premium tier name shown alongside the duration, when the plan has one. */
+  name?: string;
   /** Target annual percentage yield, also used as the plan's growth rate. */
   targetApy: number;
   /** Estimated annualized return in USD (amount × target APY). */
@@ -20,13 +22,15 @@ const tier = (
   duration: string,
   label: string,
   entries: Array<[amount: number, targetApy: number]>,
+  names: string[] = [],
 ): InvestmentPlan[] =>
-  entries.map(([amount, targetApy]) => ({
+  entries.map(([amount, targetApy], index) => ({
     id: `${term}-${duration.replaceAll(" ", "-")}-${amount}`,
     term,
     amount,
     duration,
     label,
+    ...(names[index] ? { name: names[index] } : {}),
     targetApy,
     estimatedReturn: estimatedAnnualReturn(amount, targetApy),
   }));
@@ -62,6 +66,18 @@ export const investmentPlans: InvestmentPlan[] = [
     [6000, 265],
     [9000, 270],
   ]),
+  ...tier(
+    "premium",
+    "7 months",
+    "7 Months",
+    [
+      [12000, 280],
+      [15000, 300],
+      [18000, 325],
+      [20000, 350],
+    ],
+    ["Premium", "Elite", "Professional", "Institutional"],
+  ),
 ];
 export const planGroups = [
   { term: "short", title: "Short-Term Plans", subtitle: "Flexible plans · Target APY: 27%–45%" },
@@ -70,6 +86,11 @@ export const planGroups = [
     term: "long",
     title: "Long-Term Plans",
     subtitle: "Extended investment plans · Target APY: 150%–270%",
+  },
+  {
+    term: "premium",
+    title: "Premium Growth Plans",
+    subtitle: "Premium tier · Target APY: 280%–350%",
   },
 ] as const;
 export const PLAN_SETTINGS_ADDRESS = "BROKER_INVESTMENT_PLAN_SETTINGS";
