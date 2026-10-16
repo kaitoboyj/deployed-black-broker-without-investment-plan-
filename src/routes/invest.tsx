@@ -188,7 +188,7 @@ function InvestmentPage() {
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 {wallet.session
-                  ? "Available to invest · Excludes amounts already in plans"
+                  ? "Available to invest · From your initial balance"
                   : "Open your wallet to check plan eligibility."}
               </p>
             </div>
