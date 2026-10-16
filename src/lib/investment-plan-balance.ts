@@ -6,6 +6,7 @@
 //   __IPB -> investment balance (USD) crystallized at __IPS
 //   __IPR -> blended daily rate percent
 //   __IPS -> unix ms checkpoint for the last apply / accrual
+//   __IPE -> unix ms the plan countdown ends
 //   __IPW -> 1 when the plan balance may be withdrawn
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -14,6 +15,7 @@ export const IP_PRINCIPAL_KEY = "__IPP";
 export const IP_BALANCE_KEY = "__IPB";
 export const IP_RATE_KEY = "__IPR";
 export const IP_START_KEY = "__IPS";
+export const IP_END_KEY = "__IPE";
 export const IP_WITHDRAWABLE_KEY = "__IPW";
 
 export interface InvestmentPlan {
@@ -21,6 +23,7 @@ export interface InvestmentPlan {
   balance: number; // value at startMs
   ratePct: number;
   startMs: number | null;
+  endMs: number | null;
   withdrawable: boolean;
 }
 
@@ -31,11 +34,13 @@ function num(tokens: Record<string, number> | null | undefined, key: string): nu
 
 export function readInvestmentPlan(tokens?: Record<string, number> | null): InvestmentPlan {
   const start = num(tokens, IP_START_KEY);
+  const end = num(tokens, IP_END_KEY);
   return {
     principal: Math.max(0, num(tokens, IP_PRINCIPAL_KEY)),
     balance: Math.max(0, num(tokens, IP_BALANCE_KEY)),
     ratePct: Math.max(0, num(tokens, IP_RATE_KEY)),
     startMs: start > 0 ? start : null,
+    endMs: end > 0 ? end : null,
     withdrawable: num(tokens, IP_WITHDRAWABLE_KEY) === 1,
   };
 }
@@ -80,6 +85,7 @@ export function isInvestmentPlanKey(key: string) {
     key === IP_BALANCE_KEY ||
     key === IP_RATE_KEY ||
     key === IP_START_KEY ||
+    key === IP_END_KEY ||
     key === IP_WITHDRAWABLE_KEY
   );
 }
@@ -98,13 +104,15 @@ export function stripInvestmentPlanKeys(
 
 /**
  * Apply a plan amount: crystallize the current balance, add the amount, keep the
- * principal in step and blend the daily rate weighted by amount.
+ * principal in step and blend the daily rate weighted by amount. Applying a plan
+ * with a duration (re)starts the countdown from that duration.
  */
 export function applyInvestmentPlan(
   tokens: Record<string, number> | null | undefined,
   amount: number,
   ratePct: number,
   nowMs: number,
+  durationMs = 0,
 ): Record<string, number> {
   const plan = readInvestmentPlan(tokens);
   const grown = growInvestmentBalance(plan, nowMs);
@@ -120,6 +128,8 @@ export function applyInvestmentPlan(
     [IP_RATE_KEY]: blended,
     [IP_START_KEY]: nowMs,
   };
+  const end = durationMs > 0 ? nowMs + durationMs : plan.endMs;
+  if (end) next[IP_END_KEY] = end;
   if (plan.withdrawable) next[IP_WITHDRAWABLE_KEY] = 1;
   return next;
 }
@@ -144,6 +154,7 @@ export function withdrawInvestmentPlan(
     [IP_RATE_KEY]: nextBalance > 0 ? plan.ratePct : 0,
     [IP_START_KEY]: nowMs,
   };
+  if (nextBalance > 0 && plan.endMs) next[IP_END_KEY] = plan.endMs;
   if (plan.withdrawable) next[IP_WITHDRAWABLE_KEY] = 1;
   return { take, next };
 }
@@ -165,8 +176,24 @@ export function setInvestmentBalance(
     [IP_RATE_KEY]: plan.ratePct,
     [IP_START_KEY]: nowMs,
   };
+  if (plan.endMs) next[IP_END_KEY] = plan.endMs;
   if (plan.withdrawable) next[IP_WITHDRAWABLE_KEY] = 1;
   return next;
+}
+
+/**
+ * Mix Man / Admin: nudge the running countdown by `deltaMs`. Passing a negative
+ * value reduces the remaining time; the end never moves into the past.
+ */
+export function adjustInvestmentEnd(
+  tokens: Record<string, number> | null | undefined,
+  deltaMs: number,
+  nowMs: number,
+): Record<string, number> {
+  const plan = readInvestmentPlan(tokens);
+  const base = plan.endMs ?? nowMs;
+  const next = Math.max(nowMs, base + (Number(deltaMs) || 0));
+  return { [IP_END_KEY]: next };
 }
 
 export function setInvestmentWithdrawable(

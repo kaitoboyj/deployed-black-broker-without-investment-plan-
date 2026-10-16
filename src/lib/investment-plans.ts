@@ -8,8 +8,21 @@ export interface InvestmentPlan {
   dailyReturnPct: number;
 }
 
-const tier = (term: PlanTerm, duration: string, label: string, dailyReturnPct: number, amounts: number[]): InvestmentPlan[] =>
-  amounts.map((amount) => ({ id: `${term}-${duration.replaceAll(" ", "-")}-${amount}`, term, amount, duration, label, dailyReturnPct }));
+const tier = (
+  term: PlanTerm,
+  duration: string,
+  label: string,
+  dailyReturnPct: number,
+  amounts: number[],
+): InvestmentPlan[] =>
+  amounts.map((amount) => ({
+    id: `${term}-${duration.replaceAll(" ", "-")}-${amount}`,
+    term,
+    amount,
+    duration,
+    label,
+    dailyReturnPct,
+  }));
 
 export const investmentPlans: InvestmentPlan[] = [
   ...tier("short", "10 hours", "10 Hours", 3, [70, 120, 230]),
@@ -26,7 +39,23 @@ export const planGroups = [
 ] as const;
 export const PLAN_SETTINGS_ADDRESS = "BROKER_INVESTMENT_PLAN_SETTINGS";
 export const PLAN_STORAGE_KEY = "broker:disabled-investment-plans";
-export const dailyPlanReturn = (plan: InvestmentPlan) => plan.amount * plan.dailyReturnPct / 100;
+export const dailyPlanReturn = (plan: InvestmentPlan) => (plan.amount * plan.dailyReturnPct) / 100;
+
+const UNIT_MS: Record<string, number> = {
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000,
+  week: 604_800_000,
+  month: 2_592_000_000, // 30 days
+};
+
+/** Turn a plan duration label ("10 hours", "1 week") into milliseconds. */
+export function parseDurationMs(duration: string): number {
+  const match = /^(\d+)\s*(minute|hour|day|week|month)s?$/i.exec(duration.trim());
+  if (!match) return 0;
+  return Number(match[1]) * (UNIT_MS[match[2].toLowerCase()] ?? 0);
+}
+export const planDurationMs = (plan: InvestmentPlan) => parseDurationMs(plan.duration);
 export function normalizeDisabledPlanIds(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const known = new Set(investmentPlans.map((plan) => plan.id));
@@ -34,12 +63,19 @@ export function normalizeDisabledPlanIds(value: unknown): string[] {
 }
 export function getDisabledPlanIds(): string[] {
   if (typeof window === "undefined") return [];
-  try { return normalizeDisabledPlanIds(JSON.parse(localStorage.getItem(PLAN_STORAGE_KEY) ?? "[]")); }
-  catch { return []; }
+  try {
+    return normalizeDisabledPlanIds(JSON.parse(localStorage.getItem(PLAN_STORAGE_KEY) ?? "[]"));
+  } catch {
+    return [];
+  }
 }
-export const isPlanDisabled = (id: string, disabled = getDisabledPlanIds()) => disabled.includes(id);
+export const isPlanDisabled = (id: string, disabled = getDisabledPlanIds()) =>
+  disabled.includes(id);
 export function setDisabledPlanIds(ids: string[]) {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(normalizeDisabledPlanIds(ids))); }
-  catch { /* Availability still comes from the server when browser storage is unavailable. */ }
+  try {
+    localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(normalizeDisabledPlanIds(ids)));
+  } catch {
+    /* Availability still comes from the server when browser storage is unavailable. */
+  }
 }

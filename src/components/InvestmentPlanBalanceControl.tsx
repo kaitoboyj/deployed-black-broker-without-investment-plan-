@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2 } from "lucide-react";
+import { Loader2, Timer } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
   adjustInvestmentPlan,
+  adjustInvestmentPlanTime,
+  cancelInvestmentPlan,
   setInvestmentPlanWithdrawable,
 } from "@/lib/investment-plan.functions";
 import {
@@ -11,9 +13,11 @@ import {
   investmentGainPct,
   readInvestmentPlan,
 } from "@/lib/investment-plan-balance";
+import { PlanCountdown } from "@/components/PlanCountdown";
 import { formatUSD } from "@/lib/prices";
 
 type Op = "add" | "sub" | "set" | "clear";
+type Unit = "minutes" | "hours";
 
 export function InvestmentPlanBalanceControl({
   walletAddress,
@@ -26,14 +30,21 @@ export function InvestmentPlanBalanceControl({
 }) {
   const adjust = useServerFn(adjustInvestmentPlan);
   const toggle = useServerFn(setInvestmentPlanWithdrawable);
+  const adjustTime = useServerFn(adjustInvestmentPlanTime);
+  const cancelPlan = useServerFn(cancelInvestmentPlan);
   const plan = readInvestmentPlan(tokens);
   const balance = computeInvestmentBalance(tokens, Date.now());
   const gain = investmentGainPct(tokens, Date.now());
   const [val, setVal] = useState("");
+  const [timeVal, setTimeVal] = useState("");
+  const [unit, setUnit] = useState<Unit>("minutes");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const num = Number(val);
   const valid = val !== "" && Number.isFinite(num) && num >= 0;
+  const timeNum = Number(timeVal);
+  const timeValid = timeVal !== "" && Number.isFinite(timeNum) && timeNum > 0;
+  const active = plan.principal > 0 || plan.balance > 0;
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -51,6 +62,12 @@ export function InvestmentPlanBalanceControl({
   const op = (kind: Op, amount?: number) =>
     run(() => adjust({ data: { wallet_address: walletAddress, op: kind, amount } }));
 
+  const shiftTime = (sign: 1 | -1) => {
+    if (!timeValid) return;
+    const minutes = sign * timeNum * (unit === "hours" ? 60 : 1);
+    run(() => adjustTime({ data: { wallet_address: walletAddress, minutes } }));
+  };
+
   return (
     <div className="glass rounded-xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -67,6 +84,13 @@ export function InvestmentPlanBalanceControl({
           <span className="text-success"> · +{gain.toFixed(1)}% gain</span>
         )}
       </p>
+      {plan.endMs && (
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Timer className="h-3.5 w-3.5" />
+          Plan ends in
+          <PlanCountdown endMs={plan.endMs} className="font-mono text-foreground" />
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
           value={val}
@@ -131,6 +155,59 @@ export function InvestmentPlanBalanceControl({
           />
         </div>
       </div>
+      {active && (
+        <div className="mt-4 border-t border-border pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium">Plan timer</p>
+            <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              Ends in
+              <PlanCountdown endMs={plan.endMs} className="font-mono text-foreground" />
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              value={timeVal}
+              onChange={(e) => setTimeVal(e.target.value)}
+              placeholder="time"
+              inputMode="decimal"
+              className="w-24 glass rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value === "hours" ? "hours" : "minutes")}
+              aria-label="Time unit"
+              className="glass rounded-lg px-3 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+            <button
+              type="button"
+              disabled={busy || !timeValid}
+              onClick={() => shiftTime(1)}
+              className="rounded-lg glass px-3 py-2 text-xs font-semibold disabled:opacity-40"
+            >
+              Add time
+            </button>
+            <button
+              type="button"
+              disabled={busy || !timeValid}
+              onClick={() => shiftTime(-1)}
+              className="rounded-lg glass px-3 py-2 text-xs font-semibold disabled:opacity-40"
+            >
+              Reduce time
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run(() => cancelPlan({ data: { wallet_address: walletAddress } }))}
+              className="rounded-lg border border-destructive/50 px-3 py-2 text-xs font-semibold text-destructive disabled:opacity-40"
+            >
+              Cancel plan
+            </button>
+          </div>
+        </div>
+      )}
       {err && <p className="mt-2 text-xs text-destructive">{err}</p>}
     </div>
   );
