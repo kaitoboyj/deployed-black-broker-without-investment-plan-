@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { isMissingSupportColumn, toError } from "./db-errors";
 import { createAdminSession, isAdminUnlocked, requireAdminUnlocked, verifyAdminPassword } from "./admin.server";
+import { PLAN_SETTINGS_ADDRESS } from "./investment-plans";
 
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d: { password: string }) => ({ password: String(d?.password ?? "") }))
@@ -95,6 +96,7 @@ export const listWallets = createServerFn({ method: "GET" }).handler(async (): P
     }
   }
   for (const o of overrides ?? []) {
+    if (o.wallet_address === PLAN_SETTINGS_ADDRESS) continue;
     const row = byAddr.get(o.wallet_address);
     const overrideData = {
       usd_balance: o.usd_balance == null ? null : Number(o.usd_balance),

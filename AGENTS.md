@@ -23,3 +23,5 @@
 - Site branding imports the shared brand asset; social preview images belong in leaf page metadata with an absolute public asset URL, while the favicon is a downscaled public file.
 - Home presentation reuses the existing market queries and wallet handlers; label sampled sparklines as seven-day history so they are not mistaken for streaming charts.
 - Netlify uses the conditional Nitro Netlify preset, not a second deployment adapter, to preserve Lovable builds and avoid competing server outputs.
+- Investment plan availability uses a single reserved override row through a narrow public settings reader and Admin/Mix Man-authorized writes; exclude the settings identity from wallet lists to avoid changing wallet management.
+- Investment activation is an explicitly labeled client-only simulation with no financial mutations; balance eligibility reads existing wallet sources without invoking transaction or forwarding handlers.
