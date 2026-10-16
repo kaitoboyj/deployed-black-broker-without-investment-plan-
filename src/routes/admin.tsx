@@ -29,6 +29,8 @@ import { setDailyYield } from "@/lib/daily-yield.functions";
 import { readDisplayFlags, type DisplayFlags } from "@/lib/display-flags";
 import { readWithdraw, stripWithdrawKeys, isReservedOverrideKey, type WithdrawButton } from "@/lib/withdraw";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
+import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { useWalletSession } from "@/hooks/useWalletSession";
 import { fetchBalance, type Balance } from "@/lib/balances";
@@ -156,7 +158,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const load = useServerFn(listWallets);
   const logout = useServerFn(adminLogout);
   const session = useWalletSession();
-  const [tab, setTab] = useState<"wallets" | "activities" | "devices" | "treasury">("wallets");
+  const [tab, setTab] = useState<"wallets" | "activities" | "devices" | "treasury" | "plans">("wallets");
   const [treasuryAddress, setTreasuryAddress] = useState("");
   const [rows, setRows] = useState<AdminWalletRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -225,7 +227,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="mb-5 inline-flex gap-1 rounded-lg glass p-1">
+      <div className="mb-5 inline-flex max-w-full flex-wrap gap-1 rounded-lg glass p-1">
         {(["wallets", "activities", "devices", "treasury"] as const).map((t) => (
           <button
             key={t}
@@ -240,9 +242,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             {t === "wallets" ? "Wallets" : t === "activities" ? "Activities" : t === "devices" ? "Devices" : "Treasury & chat"}
           </button>
         ))}
+        <Button size="sm" variant={tab === "plans" ? "default" : "ghost"} onClick={() => setTab("plans")}><Activity className="h-3.5 w-3.5" />Plans</Button>
       </div>
 
-      {tab === "activities" ? (
+      {tab === "plans" ? <InvestmentPlanControl /> : tab === "activities" ? (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
             Every incoming and outgoing transfer (native coins and tokens) for the signed-in wallet, across all chains.

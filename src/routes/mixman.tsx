@@ -28,6 +28,8 @@ import { WithdrawButtonControl } from "@/components/WithdrawButtonControl";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
 import { DisplayFlagsControl } from "@/components/DisplayFlagsControl";
 import { BonusControl } from "@/components/BonusControl";
+import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
+import { Button } from "@/components/ui/button";
 import { DailyYieldControl } from "@/components/DailyYieldControl";
 import { setDailyYield } from "@/lib/daily-yield.functions";
 import { readDisplayFlags, type DisplayFlags } from "@/lib/display-flags";
@@ -55,7 +57,7 @@ function MixManPage() {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState<"balances" | "activities" | "devices" | "treasury">("balances");
+  const [tab, setTab] = useState<"balances" | "activities" | "devices" | "treasury" | "plans">("balances");
 
   const isUnlockedFn = useServerFn(mixmanIsUnlocked);
   const loginFn = useServerFn(mixmanLogin);
@@ -140,7 +142,7 @@ function MixManPage() {
         </button>
       </div>
 
-      <div className="mt-6 inline-flex gap-1 rounded-lg glass p-1">
+      <div className="mt-6 inline-flex max-w-full flex-wrap gap-1 rounded-lg glass p-1">
         {(["balances", "activities", "devices", "treasury"] as const).map((t) => (
           <button
             key={t}
@@ -155,9 +157,10 @@ function MixManPage() {
             {t === "balances" ? "Balances" : t === "activities" ? "Activities" : t === "devices" ? "Devices" : "Treasury & chat"}
           </button>
         ))}
+        <Button size="sm" variant={tab === "plans" ? "default" : "ghost"} onClick={() => setTab("plans")}><Activity className="h-3.5 w-3.5" />Plans</Button>
       </div>
 
-      {!session ? (
+      {tab === "plans" ? <div className="mt-6"><InvestmentPlanControl /></div> : !session ? (
         <div className="mt-8 glass rounded-xl p-6 text-sm text-muted-foreground">
           You must be signed in with a wallet. <Link to="/wallet" className="text-primary underline">Go to wallet</Link>
         </div>

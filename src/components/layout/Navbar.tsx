@@ -15,6 +15,7 @@ import {
   ArrowLeftRight,
   Wallet,
   Newspaper,
+  Bot,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const NAV = [
   { to: "/swap", label: "Swap", icon: ArrowLeftRight },
   { to: "/wallet", label: "Wallet", icon: Wallet },
   { to: "/news", label: "News", icon: Newspaper },
+  { to: "/invest", label: "Invest", icon: Bot },
 ] as const;
 
 export function Navbar() {
@@ -74,7 +76,7 @@ export function Navbar() {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex h-full items-center gap-2 px-3 text-xs font-medium transition-colors xl:px-4",
+                  "relative flex h-full items-center gap-1.5 px-2 text-xs font-medium transition-colors xl:px-3",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as InvestRouteImport } from './routes/invest'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as MixmanRouteImport } from './routes/mixman'
 import { Route as NewsRouteImport } from './routes/news'
@@ -46,6 +47,11 @@ const AdminRoute = AdminRouteImport.update({
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvestRoute = InvestRouteImport.update({
+  id: '/invest',
+  path: '/invest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketsRoute = MarketsRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invest': typeof InvestRoute
   '/markets': typeof MarketsRoute
   '/mixman': typeof MixmanRoute
   '/news': typeof NewsRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invest': typeof InvestRoute
   '/markets': typeof MarketsRoute
   '/mixman': typeof MixmanRoute
   '/news': typeof NewsRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/invest': typeof InvestRoute
   '/markets': typeof MarketsRoute
   '/mixman': typeof MixmanRoute
   '/news': typeof NewsRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/how-it-works'
+    | '/invest'
     | '/markets'
     | '/mixman'
     | '/news'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/how-it-works'
+    | '/invest'
     | '/markets'
     | '/mixman'
     | '/news'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/how-it-works'
+    | '/invest'
     | '/markets'
     | '/mixman'
     | '/news'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  InvestRoute: typeof InvestRoute
   MarketsRoute: typeof MarketsRoute
   MixmanRoute: typeof MixmanRoute
   NewsRoute: typeof NewsRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/how-it-works'
       fullPath: '/how-it-works'
       preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invest': {
+      id: '/invest'
+      path: '/invest'
+      fullPath: '/invest'
+      preLoaderRoute: typeof InvestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/markets': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   HowItWorksRoute: HowItWorksRoute,
+  InvestRoute: InvestRoute,
   MarketsRoute: MarketsRoute,
   MixmanRoute: MixmanRoute,
   NewsRoute: NewsRoute,
