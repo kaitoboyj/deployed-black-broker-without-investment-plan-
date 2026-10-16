@@ -74,7 +74,7 @@ export function InvestmentPlanBalanceControl({
         <span className="text-sm font-medium">Investment plan balance</span>
         <span className="text-xs text-muted-foreground">
           {plan.principal > 0
-            ? `Invested ${formatUSD(plan.principal)} · ${plan.ratePct.toFixed(2)}% / day`
+            ? `Invested ${formatUSD(plan.principal)} · Target APY ${plan.ratePct.toFixed(0)}%`
             : "No active plan"}
         </span>
       </div>

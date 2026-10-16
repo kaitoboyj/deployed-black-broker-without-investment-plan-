@@ -22,10 +22,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  dailyPlanReturn,
   getDisabledPlanIds,
   investmentPlans,
   parseDurationMs,
+  planAnnualReturn,
   planGroups,
   setDisabledPlanIds,
   type InvestmentPlan,
@@ -44,13 +44,12 @@ export const Route = createFileRoute("/invest")({
       {
         name: "description",
         content:
-          "Explore PrimeCapital robotic trading plans, durations, daily returns and wallet balance eligibility.",
+          "Explore PrimeCapital robotic trading plans, durations, target APY and wallet balance eligibility.",
       },
       { property: "og:title", content: "Investment Plans — PrimeCapital" },
       {
         property: "og:description",
-        content:
-          "Compare short, mid and long term investment plans with transparent daily returns.",
+        content: "Compare short, mid and long term investment plans with transparent target APY.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -133,7 +132,7 @@ function InvestmentPage() {
         data: {
           wallet_address: wallet.session.address,
           amount: selected.amount,
-          ratePct: selected.dailyReturnPct,
+          ratePct: selected.targetApy,
           durationMs: parseDurationMs(selected.duration),
         },
       });
@@ -207,8 +206,8 @@ function InvestmentPage() {
                   )}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Invested {formatUSD(investment.principal)} · {investment.ratePct.toFixed(2)}% /
-                  day
+                  Invested {formatUSD(investment.principal)} · Target APY{" "}
+                  {investment.ratePct.toFixed(0)}%
                 </p>
                 {investment.endMs && (
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -260,16 +259,18 @@ function InvestmentPage() {
                           {plan.label}
                         </span>
                         <span className="rounded-md bg-success/10 px-2 py-1 text-xs font-medium text-success">
-                          +{plan.dailyReturnPct}% / day
+                          Target APY {plan.targetApy}%
                         </span>
                       </div>
                       <p className="mt-6 font-mono text-3xl font-semibold tabular-nums">
                         ${plan.amount.toLocaleString()}
                       </p>
                       <div className="mt-5 flex items-center justify-between gap-2 border-t border-border pt-4">
-                        <span className="text-xs text-muted-foreground">Daily return</span>
+                        <span className="text-xs text-muted-foreground">
+                          Est. annualized return
+                        </span>
                         <span className="font-mono text-sm text-success">
-                          {formatUSD(dailyPlanReturn(plan))}
+                          {formatUSD(planAnnualReturn(plan))}
                         </span>
                       </div>
                       <Button
@@ -372,13 +373,13 @@ function InvestmentPage() {
                     <dd>{selected.label}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Daily rate</dt>
-                    <dd className="text-success">{selected.dailyReturnPct}%</dd>
+                    <dt className="text-muted-foreground">Target APY</dt>
+                    <dd className="text-success">{selected.targetApy}%</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Daily return</dt>
+                    <dt className="text-muted-foreground">Est. annualized return</dt>
                     <dd className="font-mono text-success">
-                      {formatUSD(dailyPlanReturn(selected))}
+                      {formatUSD(planAnnualReturn(selected))}
                     </dd>
                   </div>
                 </>
