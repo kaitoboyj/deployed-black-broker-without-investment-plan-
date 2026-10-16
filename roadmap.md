@@ -1,4 +1,7 @@
 - [x] Save phone and email to wallet-owned accounts and show them in Telegram `/pull`.
+- [ ] Add investment catalog, public plans page and simulated confirmation without changing existing wallet actions.
+- [ ] Add shared Admin/Mix Man plan availability controls using the existing settings storage.
+- [ ] Verify investment dialogs, access protection, management persistence and mobile layout.
 - [x] Replace Nigerian phone examples with a +1 example.
 - [x] Frame contact submissions with 30 stars in Telegram alerts.
 - [x] Verify preview and block public access to saved contact details.
