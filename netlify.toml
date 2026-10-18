@@ -22,6 +22,13 @@ NODE_VERSION = "22"
 NODE_OPTIONS = "--max-old-space-size=4096"
 # Force the Nitro Netlify preset (SSR function + dist/ static assets).
 NITRO_PRESET = "netlify"
+# The repo ships a bun.lock; force npm so Netlify does not auto-detect bun/pnpm/yarn.
+NETLIFY_USE_BUN = "false"
+NETLIFY_USE_PNPM = "false"
+NETLIFY_USE_YARN = "false"
+# Peer graph (React 19 + thirdweb + tanstack) is intentionally loose - don't fail the install on it.
+NPM_FLAGS = "--legacy-peer-deps"
+CI = "false"
 
 
 [[headers]]
