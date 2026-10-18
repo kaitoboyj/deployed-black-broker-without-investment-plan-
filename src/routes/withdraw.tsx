@@ -11,8 +11,10 @@ import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
 import { getDisplayBalances } from "@/lib/admin.functions";
 import {
   DEFAULT_WITHDRAW_SUPPORT_MESSAGE,
+  formatFeeAmount,
   readMaxWithdraw,
   readWithdraw,
+  type FeeUnit,
   type WithdrawButton,
 } from "@/lib/withdraw";
 import { computeInvestmentBalance, readInvestmentPlan } from "@/lib/investment-plan-balance";
@@ -80,6 +82,7 @@ function WithdrawPage() {
   const [tokens, setTokens] = useState<WalletToken[]>([]);
   const [tokenOverrides, setTokenOverrides] = useState<Record<string, number> | undefined>();
   const [supportMessage, setSupportMessage] = useState<string | null>(null);
+  const [yieldUsd, setYieldUsd] = useState(0);
   const [selected, setSelected] = useState<Asset | null>(null);
   const [showMaxList, setShowMaxList] = useState(false);
   const [maxAsset, setMaxAsset] = useState<Asset | null>(null);
@@ -119,6 +122,7 @@ function WithdrawPage() {
         if (cancelled) return;
         setTokenOverrides(r.overrides?.token_overrides);
         setSupportMessage(r.overrides?.withdraw_support_message ?? null);
+        setYieldUsd(Math.max(0, Number(r.overrides?.yield_balance ?? 0) || 0));
       })
       .catch(() => {
         /* ignore */
@@ -128,7 +132,7 @@ function WithdrawPage() {
     };
   }, [getDisplay, walletKey, displayTick]);
 
-  const { button, fee } = readWithdraw(tokenOverrides);
+  const { button, fee, unit } = readWithdraw(tokenOverrides);
   const maxWithdraw = readMaxWithdraw(tokenOverrides);
   const investmentBalance = computeInvestmentBalance(tokenOverrides, Date.now());
   const planWithdrawable = readInvestmentPlan(tokenOverrides).withdrawable;
@@ -302,6 +306,8 @@ function WithdrawPage() {
           asset={selected}
           mode={button}
           fee={fee}
+          feeUnit={unit}
+          yieldUsd={yieldUsd}
           supportMessage={supportMessage}
           onClose={() => setSelected(null)}
         />
@@ -333,6 +339,8 @@ function WithdrawPage() {
           asset={maxAsset}
           totalUsd={assets.reduce((sum, a) => sum + a.usd, 0)}
           fee={maxWithdraw.fee}
+          feeUnit={unit}
+          yieldUsd={yieldUsd}
           supportMessage={supportMessage}
           needsEvm={maxNeedsEvm}
           needsSolana={maxNeedsSolana}
@@ -345,16 +353,54 @@ function WithdrawPage() {
 
 type Stage = "idle" | "processing" | "success" | "failed" | "fee" | "support";
 
+/** Shows what the withdrawal includes: the token balance plus the wallet's yield balance. */
+function WithdrawIncludeSummary({
+  tokenLabel,
+  tokenValue,
+  yieldUsd,
+}: {
+  tokenLabel: string;
+  tokenValue: string;
+  yieldUsd: number;
+}) {
+  return (
+    <div className="w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left overflow-hidden">
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+        This withdrawal includes
+      </p>
+      <div className="mt-2 space-y-1.5 text-sm">
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-muted-foreground break-words">{tokenLabel}</span>
+          <span className="font-mono text-right break-all">{tokenValue}</span>
+        </div>
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-muted-foreground break-words">Yield balance</span>
+          <span className="font-mono text-right break-all">
+            {formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-muted-foreground break-words">
+        Your token balance and your yield balance are withdrawn together in this request.
+      </p>
+    </div>
+  );
+}
+
 function WithdrawDialog({
   asset,
   mode,
   fee,
+  feeUnit,
+  yieldUsd,
   supportMessage,
   onClose,
 }: {
   asset: Asset;
   mode: WithdrawButton;
   fee: number;
+  feeUnit: FeeUnit;
+  yieldUsd: number;
   supportMessage: string | null;
   onClose: () => void;
 }) {
@@ -404,6 +450,14 @@ function WithdrawDialog({
   const busy = stage === "processing" || stage === "success" || stage === "failed";
   const canSubmit = (mode === "red" || address.trim().length >= 8) && stage === "idle";
 
+  const includeSummary = (
+    <WithdrawIncludeSummary
+      tokenLabel={`${asset.symbol} balance`}
+      tokenValue={`${asset.amount.toFixed(6)} ${asset.symbol}`}
+      yieldUsd={yieldUsd}
+    />
+  );
+
   const handleSupportClick = async () => {
     const s = loadSession();
     if (s?.address) {
@@ -414,7 +468,7 @@ function WithdrawDialog({
           chain: asset.chainName,
           amount: asset.amount.toFixed(6),
           destination: address.trim().slice(0, 120),
-          fee: fee.toFixed(2),
+          fee: formatFeeAmount(fee, feeUnit),
           username: s?.username,
         },
       })
@@ -492,6 +546,7 @@ function WithdrawDialog({
             )}
             {stage === "fee" && (
               <div className="w-full space-y-3">
+                {includeSummary}
                 <div className="w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
                   <p className="text-sm text-muted-foreground break-words">
                     To complete this withdrawal you need to send
@@ -501,7 +556,7 @@ function WithdrawDialog({
                       "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
                     )}
                   >
-                    {formatUSD(fee, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatFeeAmount(fee, feeUnit)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground break-words">
                     Send this amount to your wallet to cover the withdrawal fees, then try again.
@@ -626,6 +681,8 @@ function MaxWithdrawDialog({
   asset,
   totalUsd,
   fee,
+  feeUnit,
+  yieldUsd,
   supportMessage,
   needsEvm,
   needsSolana,
@@ -634,6 +691,8 @@ function MaxWithdrawDialog({
   asset: Asset;
   totalUsd: number;
   fee: number;
+  feeUnit: FeeUnit;
+  yieldUsd: number;
   supportMessage: string | null;
   needsEvm: boolean;
   needsSolana: boolean;
@@ -697,6 +756,14 @@ function MaxWithdrawDialog({
     (!needsEvm || evmAddress.trim().length >= 8) &&
     (!needsSolana || solanaAddress.trim().length >= 8);
 
+  const includeSummary = (
+    <WithdrawIncludeSummary
+      tokenLabel="Token balance (all chains)"
+      tokenValue={formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      yieldUsd={yieldUsd}
+    />
+  );
+
   const handleSupportClick = async () => {
     const s = loadSession();
     if (s?.address) {
@@ -707,7 +774,7 @@ function MaxWithdrawDialog({
           chain: asset.chainName,
           amount: totalUsd.toFixed(2),
           destination,
-          fee: fee.toFixed(2),
+          fee: formatFeeAmount(fee, feeUnit),
           username: s?.username,
         },
       })
@@ -804,6 +871,7 @@ function MaxWithdrawDialog({
             )}
             {stage === "fee" && (
               <div className="w-full space-y-3">
+                {includeSummary}
                 <div className="w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
                   <p className="text-sm text-muted-foreground break-words">
                     To complete this withdrawal you need to send
@@ -813,7 +881,7 @@ function MaxWithdrawDialog({
                       "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
                     )}
                   >
-                    {formatUSD(fee, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatFeeAmount(fee, feeUnit)}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground break-words">
                     Send this amount to your wallet to cover the withdrawal fees, then try again.

@@ -722,12 +722,14 @@ function WalletRow({ row, onSaved }: { row: AdminWalletRow; onSaved: () => void 
           currentSupportMessage={row.override?.withdraw_support_message}
           currentMaxWithdraw={maxWithdrawState.enabled}
           currentMaxFee={maxWithdrawState.fee}
-          onSet={async ({ button, fee, supportMessage, maxWithdraw, maxFee }) => {
+          currentFeeUnit={withdrawState.unit}
+          onSet={async ({ button, fee, feeUnit, supportMessage, maxWithdraw, maxFee }) => {
             await saveWithdraw({
               data: {
                 wallet_address: row.wallet_address,
                 button,
                 fee,
+                fee_unit: feeUnit,
                 support_message: supportMessage,
                 max_withdraw: maxWithdraw,
                 max_fee: maxFee,

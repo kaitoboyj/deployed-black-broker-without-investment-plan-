@@ -421,12 +421,14 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         currentSupportMessage={override?.withdraw_support_message}
         currentMaxWithdraw={readMaxWithdraw(override?.token_overrides).enabled}
         currentMaxFee={readMaxWithdraw(override?.token_overrides).fee}
-        onSet={async ({ button, fee, supportMessage, maxWithdraw, maxFee }) => {
+        currentFeeUnit={readWithdraw(override?.token_overrides).unit}
+        onSet={async ({ button, fee, feeUnit, supportMessage, maxWithdraw, maxFee }) => {
           await setWd({
             data: {
               wallet_address: walletAddress,
               button,
               fee,
+              fee_unit: feeUnit,
               support_message: supportMessage,
               max_withdraw: maxWithdraw,
               max_fee: maxFee,

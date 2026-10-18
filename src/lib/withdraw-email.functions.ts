@@ -138,7 +138,7 @@ export const sendWithdrawSupportEmail = createServerFn({ method: "POST" })
 <tr><td style="padding:4px 12px 4px 0;color:#666">Asset</td><td>${esc(data.symbol)} (${esc(data.chain)})</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#666">Requested amount</td><td>${esc(data.amount)} ${esc(data.symbol)}</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#666">Destination</td><td style="font-family:monospace">${esc(data.destination)}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Fee required</td><td>$${esc(data.fee)}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#666">Fee required</td><td>${esc(data.fee)}</td></tr>
 <tr><td style="padding:4px 12px 4px 0;color:#666">Date</td><td>${new Date().toUTCString()}</td></tr>
 </table>
 <p style="margin-top:20px"><strong>Next steps:</strong></p>

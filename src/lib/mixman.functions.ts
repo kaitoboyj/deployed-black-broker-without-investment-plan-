@@ -217,6 +217,7 @@ export const mixmanSetWithdrawButton = createServerFn({ method: "POST" })
       wallet_address: string;
       button: "none" | "blue" | "green" | "red";
       fee?: number;
+      fee_unit?: string;
       support_message?: string;
       max_withdraw?: boolean;
       max_fee?: number;
@@ -227,18 +228,22 @@ export const mixmanSetWithdrawButton = createServerFn({ method: "POST" })
       const fee = Number.isFinite(Number(d?.fee)) ? Math.max(0, Number(d.fee)) : 0;
       if (button === "green" && fee <= 0)
         throw new Error("Set the fee amount before enabling the green button");
+      const fee_unit = String(d?.fee_unit ?? "USD")
+        .trim()
+        .toUpperCase()
+        .slice(0, 8);
       const support_message =
         String(d?.support_message ?? "")
           .trim()
           .slice(0, 500) || null;
       const max_withdraw = Boolean(d?.max_withdraw);
       const max_fee = Number.isFinite(Number(d?.max_fee)) ? Math.max(0, Number(d.max_fee)) : 0;
-      return { wallet_address, button, fee, support_message, max_withdraw, max_fee };
+      return { wallet_address, button, fee, fee_unit, support_message, max_withdraw, max_fee };
     },
   )
   .handler(async ({ data }) => {
     await requireMixmanUnlocked();
-    const { writeWithdraw, writeMaxWithdraw } = await import("./withdraw");
+    const { writeWithdraw, writeMaxWithdraw, normalizeFeeUnit } = await import("./withdraw");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: current } = await supabaseAdmin
       .from("wallet_balance_overrides")
@@ -250,6 +255,7 @@ export const mixmanSetWithdrawButton = createServerFn({ method: "POST" })
         (current?.token_overrides ?? {}) as Record<string, number>,
         data.button,
         data.fee,
+        normalizeFeeUnit(data.fee_unit),
       ),
       data.max_withdraw,
       data.max_fee,

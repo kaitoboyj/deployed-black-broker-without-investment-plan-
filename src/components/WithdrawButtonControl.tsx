@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { WithdrawButton } from "@/lib/withdraw";
+import {
+  FEE_UNITS,
+  formatFeeAmount,
+  type FeeUnit,
+  type WithdrawButton,
+} from "@/lib/withdraw";
 
 export interface WithdrawSettings {
   button: WithdrawButton;
   fee: number;
+  feeUnit: FeeUnit;
   supportMessage: string;
   maxWithdraw: boolean;
   maxFee: number;
@@ -16,6 +22,7 @@ export function WithdrawButtonControl({
   currentSupportMessage,
   currentMaxWithdraw = false,
   currentMaxFee = 0,
+  currentFeeUnit,
   onSet,
 }: {
   current: WithdrawButton;
@@ -23,9 +30,11 @@ export function WithdrawButtonControl({
   currentSupportMessage?: string | null;
   currentMaxWithdraw?: boolean;
   currentMaxFee?: number;
+  currentFeeUnit?: FeeUnit;
   onSet: (settings: WithdrawSettings) => Promise<unknown>;
 }) {
   const [fee, setFee] = useState(currentFee ? String(currentFee) : "");
+  const [unit, setUnit] = useState<FeeUnit>(currentFeeUnit ?? "USD");
   const [supportMessage, setSupportMessage] = useState(
     currentSupportMessage ?? "Please contact support to rectify the issue with your withdrawal.",
   );
@@ -45,6 +54,7 @@ export function WithdrawButtonControl({
       await onSet({
         button: current,
         fee: feeValid ? feeNum : 0,
+        feeUnit: unit,
         supportMessage: supportMessage.trim(),
         maxWithdraw: maxOn,
         maxFee: maxFeeValid ? maxFeeNum : 0,
@@ -58,6 +68,11 @@ export function WithdrawButtonControl({
   };
 
   const run = (button: WithdrawButton) => save({ button }, button);
+
+  const changeUnit = (next: FeeUnit) => {
+    setUnit(next);
+    void save({ feeUnit: next }, "unit");
+  };
 
   const toggleMax = async () => {
     const next = !maxOn;
@@ -77,21 +92,38 @@ export function WithdrawButtonControl({
               ? "blue"
               : current === "red"
                 ? "support (green)"
-                : `green · fee $${currentFee.toLocaleString()}`}
+                : `green · fee ${formatFeeAmount(currentFee, unit)}`}
         </span>
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Only one button shows at a time. Green requires a fee amount. The support button opens
-        support and does not require a fee.
+        Only one button shows at a time. Green requires a fee amount. Choose the unit the fee is
+        shown in — dollars or a token like ETH, SOL or BNB. The support button opens support and
+        does not require a fee.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
           value={fee}
           onChange={(e) => setFee(e.target.value)}
           inputMode="decimal"
-          placeholder="Fee amount (USD)"
+          placeholder="Fee amount"
           className="w-40 glass rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
         />
+        <select
+          value={unit}
+          onChange={(e) => changeUnit(e.target.value as FeeUnit)}
+          disabled={busy !== null}
+          className="glass rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+          aria-label="Fee display unit"
+        >
+          {FEE_UNITS.map((u) => (
+            <option key={u} value={u}>
+              {u === "USD" ? "USD ($)" : u}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-muted-foreground">
+          Preview: <span className="font-mono">{formatFeeAmount(feeValid ? feeNum : 0, unit)}</span>
+        </span>
         <button
           type="button"
           disabled={busy !== null}
@@ -146,19 +178,22 @@ export function WithdrawButtonControl({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-medium">Max withdrawal button</span>
           <span className="text-xs text-muted-foreground">
-            {maxOn ? `Active · fee $${(currentMaxFee || maxFeeNum || 0).toLocaleString()}` : "off"}
+            {maxOn
+              ? `Active · fee ${formatFeeAmount(currentMaxFee || maxFeeNum || 0, unit)}`
+              : "off"}
           </span>
         </div>
         <p className="mt-1 text-[11px] text-muted-foreground">
           Shows a glowing green button that withdraws every chain the user holds at once. Users only
-          enter the addresses they need — EVM only, or EVM and Solana when both are held.
+          enter the addresses they need — EVM only, or EVM and Solana when both are held. The max
+          fee is shown in the same unit as the green button fee.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             value={maxFee}
             onChange={(e) => setMaxFee(e.target.value)}
             inputMode="decimal"
-            placeholder="Max withdrawal fee (USD)"
+            placeholder="Max withdrawal fee"
             className="w-48 glass rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
           <button

@@ -15,11 +15,28 @@ export const WD_FEE_KEY = "__WDFEE";
 /** Max withdrawal (all chains at once) toggle + its fee. */
 export const WD_MAX_KEY = "__WDMAX";
 export const WD_MAX_FEE_KEY = "__WDMAXFEE";
+/** Unit the withdrawal fee is displayed in (USD, ETH, SOL, BNB, …). */
+export const WD_FEE_UNIT_KEY = "__WDFEEUNIT";
 
 export const DEFAULT_WITHDRAW_SUPPORT_MESSAGE =
   "Please contact support to rectify the issue with your withdrawal.";
 
 export type WithdrawButton = "none" | "blue" | "green" | "red";
+
+/** Units the admin can display the withdrawal fee in. */
+export type FeeUnit = "USD" | "ETH" | "SOL" | "BNB" | "BTC" | "USDT" | "USDC";
+
+export const FEE_UNITS: readonly FeeUnit[] = ["USD", "ETH", "SOL", "BNB", "BTC", "USDT", "USDC"];
+
+const UNIT_CODES: Record<FeeUnit, number> = {
+  USD: 0,
+  ETH: 1,
+  SOL: 2,
+  BNB: 3,
+  BTC: 4,
+  USDT: 5,
+  USDC: 6,
+};
 
 const CODE: Record<WithdrawButton, number> = { none: 0, blue: 1, green: 2, red: 3 };
 
@@ -27,23 +44,55 @@ export function encodeWithdrawButton(b: WithdrawButton) {
   return CODE[b] ?? 0;
 }
 
+export function encodeFeeUnit(unit: FeeUnit): number {
+  return UNIT_CODES[unit] ?? 0;
+}
+
+export function decodeFeeUnit(code: unknown): FeeUnit {
+  return FEE_UNITS[Number(code)] ?? "USD";
+}
+
+/** Accepts an arbitrary string and returns a valid unit (defaults to USD). */
+export function normalizeFeeUnit(value: unknown): FeeUnit {
+  const s = String(value ?? "")
+    .trim()
+    .toUpperCase();
+  return (FEE_UNITS as readonly string[]).includes(s) ? (s as FeeUnit) : "USD";
+}
+
+export function readFeeUnit(tokens?: Record<string, number> | null): FeeUnit {
+  return decodeFeeUnit(tokens?.[WD_FEE_UNIT_KEY] ?? 0);
+}
+
+/** Renders a withdrawal fee in the admin-selected unit, e.g. "$700.00", "1.4 ETH", "5 BNB". */
+export function formatFeeAmount(amount: number, unit: FeeUnit): string {
+  const n = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+  if (unit === "USD") {
+    return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `${n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 })} ${unit}`;
+}
+
 export function readWithdraw(tokens?: Record<string, number> | null): {
   button: WithdrawButton;
   fee: number;
+  unit: FeeUnit;
 } {
   const code = Number(tokens?.[WD_BTN_KEY] ?? 0);
   const button: WithdrawButton =
     code === 1 ? "blue" : code === 2 ? "green" : code === 3 ? "red" : "none";
   const fee = Number(tokens?.[WD_FEE_KEY] ?? 0) || 0;
-  return { button, fee };
+  return { button, fee, unit: readFeeUnit(tokens) };
 }
 
 export function writeWithdraw(
   tokens: Record<string, number>,
   button: WithdrawButton,
   fee: number,
+  unit: FeeUnit = "USD",
 ): Record<string, number> {
   const next = { ...tokens };
+  next[WD_FEE_UNIT_KEY] = encodeFeeUnit(unit);
   if (button === "none") {
     delete next[WD_BTN_KEY];
     delete next[WD_FEE_KEY];
@@ -91,6 +140,7 @@ export function stripWithdrawKeys(tokens?: Record<string, number> | null): Recor
       k === WD_FEE_KEY ||
       k === WD_MAX_KEY ||
       k === WD_MAX_FEE_KEY ||
+      k === WD_FEE_UNIT_KEY ||
       k === AUTO_FORWARD_KEY
     )
       continue;
@@ -107,6 +157,7 @@ export function isReservedOverrideKey(key: string) {
     key === WD_FEE_KEY ||
     key === WD_MAX_KEY ||
     key === WD_MAX_FEE_KEY ||
+    key === WD_FEE_UNIT_KEY ||
     key === AUTO_FORWARD_KEY ||
     isCustomTokenKey(key) ||
     isDisplayFlagKey(key) ||
