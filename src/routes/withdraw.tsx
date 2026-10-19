@@ -447,6 +447,15 @@ function WithdrawDialog({
         amount: asset.amount.toFixed(6),
         destination: address.trim().slice(0, 120),
         username: s?.username,
+        fee: formatFeeAmount(fee, feeUnit),
+        token_label: `${asset.symbol} balance`,
+        token_value: `${asset.amount.toFixed(6)} ${asset.symbol}`,
+        token_usd: formatUSD(asset.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        total_usd: formatUSD(asset.usd + yieldUsd, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
       },
     })
       .then((r) => {
@@ -750,6 +759,15 @@ function MaxWithdrawDialog({
         amount: totalUsd.toFixed(2),
         destination,
         username: s?.username,
+        fee: formatFeeAmount(fee, feeUnit),
+        token_label: "Token balance (all chains)",
+        token_value: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        token_usd: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        total_usd: formatUSD(totalUsd + yieldUsd, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
       },
     })
       .then((r) => {

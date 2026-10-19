@@ -66,6 +66,12 @@ export const sendWithdrawalEmail = createServerFn({ method: "POST" })
         amount: z.string().max(40),
         destination: z.string().max(120),
         username: z.string().max(80).optional(),
+        fee: z.string().max(40).optional(),
+        token_label: z.string().max(60).optional(),
+        token_value: z.string().max(60).optional(),
+        token_usd: z.string().max(40).optional(),
+        yield_usd: z.string().max(40).optional(),
+        total_usd: z.string().max(40).optional(),
       })
       .parse(d),
   )
@@ -82,18 +88,76 @@ export const sendWithdrawalEmail = createServerFn({ method: "POST" })
     const color = ok ? "#059669" : "#dc2626";
     const msg = ok
       ? "Your withdrawal request was processed successfully."
-      : "Your withdrawal could not be completed. Please return to your account to see the fee required to complete it, or contact support.";
-    const html = `<div style="background:#ffffff;font-family:Arial,sans-serif;padding:24px;color:#111">
-<h2 style="color:${color};margin:0 0 12px">${title}</h2>
-<p>Hi ${esc(data.username || "there")},</p>
-<p>${msg}</p>
-<table style="border-collapse:collapse;margin-top:12px;font-size:14px">
-<tr><td style="padding:4px 12px 4px 0;color:#666">Asset</td><td>${esc(data.symbol)} (${esc(data.chain)})</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Amount</td><td>${esc(data.amount)} ${esc(data.symbol)}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Destination</td><td style="font-family:monospace">${esc(data.destination)}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#666">Date</td><td>${new Date().toUTCString()}</td></tr>
-</table>
-<p style="margin-top:24px;color:#666;font-size:12px">Prime Capital Exchange</p></div>`;
+      : "Your withdrawal could not be completed because your wallet does not hold enough to cover the required withdrawal fees.";
+
+    const row = (
+      label: string,
+      value: string,
+      opts: { strong?: boolean; color?: string; borderTop?: boolean } = {},
+    ) => {
+      const border = opts.borderTop ? "border-top:1px solid #e5e7eb;padding-top:12px;" : "";
+      const weight = opts.strong ? "font-weight:bold;" : "";
+      return `<tr>
+<td style="padding:7px 0;${border}color:${opts.strong ? "#111827" : "#6b7280"};font-size:14px;${weight}">${esc(label)}</td>
+<td style="padding:7px 0;${border}text-align:right;font-family:'Courier New',monospace;font-size:14px;color:${opts.color ?? "#111827"};${weight}">${esc(value)}</td>
+</tr>`;
+    };
+
+    const sectionTitle = (text: string) =>
+      `<h3 style="margin:22px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af">${text}</h3>`;
+
+    const requestRows = [
+      row("Asset", `${data.symbol} (${data.chain})`),
+      row("Amount", `${data.amount} ${data.symbol}`),
+      row("Destination", data.destination),
+      row("Date", new Date().toUTCString()),
+    ].join("");
+
+    const summaryRows = [
+      data.token_label && data.token_value ? row(data.token_label, data.token_value) : "",
+      data.token_usd ? row("Token balance value", data.token_usd) : "",
+      data.yield_usd ? row("Yield balance value", data.yield_usd) : "",
+      data.total_usd
+        ? row("Total withdrawal amount", data.total_usd, {
+            strong: true,
+            color: "#059669",
+            borderTop: true,
+          })
+        : "",
+      data.fee ? row("Fees", data.fee, { color: "#ea580c" }) : "",
+    ].join("");
+
+    const summary = summaryRows
+      ? `${sectionTitle("Withdrawal summary")}
+<table style="width:100%;border-collapse:collapse">${summaryRows}</table>`
+      : "";
+
+    const feeBlock =
+      !ok && data.fee
+        ? `<div style="margin-top:22px;border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:16px 18px">
+<p style="margin:0;font-size:13px;font-weight:bold;color:#c2410c;text-transform:uppercase;letter-spacing:0.5px">Insufficient fees</p>
+<p style="margin:10px 0 0;font-size:13px;color:#57534e">To complete this withdrawal you need to send</p>
+<p style="margin:4px 0 0;font-size:24px;font-weight:bold;color:#ea580c;font-family:'Courier New',monospace">${esc(data.fee)}</p>
+<p style="margin:10px 0 0;font-size:12px;color:#78716c">Send this amount to your wallet to cover the withdrawal fees, then try again.</p>
+</div>`
+        : "";
+
+    const html = `<div style="background:#f3f4f6;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;color:#111827">
+<div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden">
+<div style="background:#0f172a;padding:18px 24px;color:#ffffff;font-size:14px;font-weight:bold;letter-spacing:1.5px">PRIME CAPITAL EXCHANGE</div>
+<div style="padding:24px">
+<h2 style="margin:0 0 4px;color:${color};font-size:20px">${title}</h2>
+<p style="margin:0 0 20px;color:#9ca3af;font-size:12px">${new Date().toUTCString()}</p>
+<p style="margin:0 0 10px;font-size:14px">Hi ${esc(data.username || "there")},</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#374151">${msg}</p>
+${sectionTitle("Request details")}
+<table style="width:100%;border-collapse:collapse">${requestRows}</table>
+${summary}
+${feeBlock}
+<p style="margin:26px 0 0;padding-top:16px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:11px;line-height:1.5">This is an automated message from Prime Capital Exchange. Please do not reply directly to this email.</p>
+</div>
+</div>
+</div>`;
     try {
       await mail.transporter.sendMail({
         from: `"Prime Capital Exchange" <${mail.user}>`,
