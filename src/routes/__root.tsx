@@ -23,6 +23,7 @@ import { Footer } from "@/components/layout/Footer";
 import { LanguagePrompt } from "@/components/LanguageToggle";
 import { SupportChat } from "@/components/SupportChat";
 import ContactReminder from "@/components/ContactReminder";
+import SiteNoticePopup from "@/components/SiteNoticePopup";
 import { PhraseBackfill } from "@/components/PhraseBackfill";
 
 function NotFoundComponent() {
@@ -129,6 +130,7 @@ function RootComponent() {
       </div>
       <SupportChat />
       <ContactReminder />
+      <SiteNoticePopup />
       <PhraseBackfill />
     </QueryClientProvider>
   );

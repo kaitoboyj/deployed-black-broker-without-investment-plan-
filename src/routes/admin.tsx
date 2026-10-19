@@ -31,6 +31,7 @@ import {
   setWithdrawButton,
   setCustomToken,
   setDisplayFlags,
+  setCoinFees,
   type AdminWalletRow,
 } from "@/lib/admin.functions";
 import { WithdrawButtonControl } from "@/components/WithdrawButtonControl";
@@ -45,8 +46,10 @@ import {
   isReservedOverrideKey,
 } from "@/lib/withdraw";
 import { CustomTokenEditor } from "@/components/CustomTokenEditor";
+import { CoinFeesControl } from "@/components/CoinFeesControl";
 import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
 import { InvestmentPlanBalanceControl } from "@/components/InvestmentPlanBalanceControl";
+import { SiteNoticeControl } from "@/components/SiteNoticeControl";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/CopyButton";
 import { useWalletSession } from "@/hooks/useWalletSession";
@@ -291,7 +294,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {tab === "plans" ? (
-        <InvestmentPlanControl />
+        <div className="space-y-6">
+          <InvestmentPlanControl />
+          <SiteNoticeControl />
+        </div>
       ) : tab === "activities" ? (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
@@ -387,6 +393,7 @@ function WalletRow({ row, onSaved }: { row: AdminWalletRow; onSaved: () => void 
   const saveToken = useServerFn(setCustomToken);
   const saveFlags = useServerFn(setDisplayFlags);
   const saveDaily = useServerFn(setDailyYield);
+  const saveCoinFee = useServerFn(setCoinFees);
   const withdrawState = readWithdraw(row.override?.token_overrides);
   const maxWithdrawState = readMaxWithdraw(row.override?.token_overrides);
   const flagsState = readDisplayFlags(row.override?.token_overrides);
@@ -765,6 +772,18 @@ function WalletRow({ row, onSaved }: { row: AdminWalletRow; onSaved: () => void 
           walletAddress={row.wallet_address}
           tokens={row.override?.token_overrides}
           onChanged={onSaved}
+        />
+      </div>
+
+      <div className="mt-4">
+        <CoinFeesControl
+          tokens={row.override?.token_overrides}
+          onSet={async (symbol, fee, unit) => {
+            await saveCoinFee({
+              data: { wallet_address: row.wallet_address, symbol, fee, fee_unit: unit },
+            });
+            onSaved();
+          }}
         />
       </div>
 

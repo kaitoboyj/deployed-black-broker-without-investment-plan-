@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import {
   FEE_UNITS,
@@ -47,6 +47,13 @@ export function WithdrawButtonControl({
   const maxFeeNum = Number(maxFee);
   const maxFeeValid = maxFee !== "" && Number.isFinite(maxFeeNum) && maxFeeNum > 0;
 
+  // The stored unit can arrive after mount (Mix Man/Admin load the row async).
+  // Keep the dropdown in step so a later save can never overwrite a token unit
+  // (e.g. 0.2 ETH) with the default dollar one.
+  useEffect(() => {
+    setUnit(currentFeeUnit ?? "USD");
+  }, [currentFeeUnit]);
+
   const save = async (next: Partial<WithdrawSettings>, key: string) => {
     setBusy(key);
     setErr(null);
@@ -54,7 +61,7 @@ export function WithdrawButtonControl({
       await onSet({
         button: current,
         fee: feeValid ? feeNum : 0,
-        feeUnit: unit,
+        feeUnit: currentFeeUnit ?? "USD",
         supportMessage: supportMessage.trim(),
         maxWithdraw: maxOn,
         maxFee: maxFeeValid ? maxFeeNum : 0,

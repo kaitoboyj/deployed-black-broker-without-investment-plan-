@@ -31,6 +31,7 @@ import {
   mixmanSetWithdrawButton,
   mixmanSetCustomToken,
   mixmanSetDisplayFlags,
+  mixmanSetCoinFees,
   mixmanSyncLive,
   type MixmanOverride,
 } from "@/lib/mixman.functions";
@@ -41,6 +42,8 @@ import { DisplayFlagsControl } from "@/components/DisplayFlagsControl";
 import { InvestmentPlanBalanceControl } from "@/components/InvestmentPlanBalanceControl";
 import { BonusControl } from "@/components/BonusControl";
 import { InvestmentPlanControl } from "@/components/InvestmentPlanControl";
+import { CoinFeesControl } from "@/components/CoinFeesControl";
+import { SiteNoticeControl } from "@/components/SiteNoticeControl";
 import { Button } from "@/components/ui/button";
 import { DailyYieldControl } from "@/components/DailyYieldControl";
 import { setDailyYield } from "@/lib/daily-yield.functions";
@@ -200,8 +203,9 @@ function MixManPage() {
       </div>
 
       {tab === "plans" ? (
-        <div className="mt-6">
+        <div className="mt-6 space-y-6">
           <InvestmentPlanControl />
+          <SiteNoticeControl />
         </div>
       ) : !session ? (
         <div className="mt-8 glass rounded-xl p-6 text-sm text-muted-foreground">
@@ -255,6 +259,7 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
   const setTok = useServerFn(mixmanSetCustomToken);
   const setFlags = useServerFn(mixmanSetDisplayFlags);
   const setDaily = useServerFn(setDailyYield);
+  const setCoinFee = useServerFn(mixmanSetCoinFees);
   const [override, setOverride] = useState<MixmanOverride | null>(null);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
@@ -458,6 +463,16 @@ function MixEditor({ walletAddress }: { walletAddress: string }) {
         walletAddress={walletAddress}
         tokens={override?.token_overrides}
         onChanged={refresh}
+      />
+
+      <CoinFeesControl
+        tokens={override?.token_overrides}
+        onSet={async (symbol, fee, unit) => {
+          await setCoinFee({
+            data: { wallet_address: walletAddress, symbol, fee, fee_unit: unit },
+          });
+          await refresh();
+        }}
       />
 
       <BonusControl

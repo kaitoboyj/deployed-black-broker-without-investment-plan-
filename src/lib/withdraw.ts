@@ -17,6 +17,14 @@ export const WD_MAX_KEY = "__WDMAX";
 export const WD_MAX_FEE_KEY = "__WDMAXFEE";
 /** Unit the withdrawal fee is displayed in (USD, ETH, SOL, BNB, …). */
 export const WD_FEE_UNIT_KEY = "__WDFEEUNIT";
+/**
+ * Per-coin withdrawal fees, set from the "Fees customisation" section.
+ *   FEE:<SYMBOL> -> fee amount for that coin
+ *   FEU:<SYMBOL> -> unit the fee is shown in (same codes as WD_FEE_UNIT_KEY)
+ * Kept to 12 characters (the cap the balance editor applies to override keys).
+ */
+export const COIN_FEE_PREFIX = "FEE:";
+export const COIN_UNIT_PREFIX = "FEU:";
 
 export const DEFAULT_WITHDRAW_SUPPORT_MESSAGE =
   "Please contact support to rectify the issue with your withdrawal.";
@@ -131,6 +139,78 @@ export function writeMaxWithdraw(
   return next;
 }
 
+/** Coin ticker used in per-coin fee keys (capped so the key stays ≤ 12 chars). */
+export function normalizeCoinSymbol(symbol: string) {
+  return String(symbol ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 8);
+}
+
+export function coinFeeAmountKey(symbol: string) {
+  return `${COIN_FEE_PREFIX}${normalizeCoinSymbol(symbol)}`;
+}
+
+export function coinFeeUnitKey(symbol: string) {
+  return `${COIN_UNIT_PREFIX}${normalizeCoinSymbol(symbol)}`;
+}
+
+export function isCoinFeeKey(key: string) {
+  return key.startsWith(COIN_FEE_PREFIX) || key.startsWith(COIN_UNIT_PREFIX);
+}
+
+export interface CoinFee {
+  symbol: string;
+  fee: number;
+  unit: FeeUnit;
+}
+
+/** The fee configured for a single coin, or null when the global fee applies. */
+export function readCoinFee(
+  tokens: Record<string, number> | null | undefined,
+  symbol: string,
+): CoinFee | null {
+  const sym = normalizeCoinSymbol(symbol);
+  if (!sym) return null;
+  const raw = tokens?.[coinFeeAmountKey(sym)];
+  if (raw === undefined || raw === null || !Number.isFinite(Number(raw))) return null;
+  return { symbol: sym, fee: Math.max(0, Number(raw)), unit: decodeFeeUnit(tokens?.[coinFeeUnitKey(sym)] ?? 0) };
+}
+
+/** Every coin that has its own fee configured. */
+export function listCoinFees(tokens?: Record<string, number> | null): CoinFee[] {
+  const out: CoinFee[] = [];
+  for (const [k, v] of Object.entries(tokens ?? {})) {
+    if (!k.startsWith(COIN_FEE_PREFIX)) continue;
+    const symbol = k.slice(COIN_FEE_PREFIX.length);
+    if (!symbol || !Number.isFinite(Number(v))) continue;
+    out.push({ symbol, fee: Math.max(0, Number(v)), unit: decodeFeeUnit(tokens?.[coinFeeUnitKey(symbol)] ?? 0) });
+  }
+  return out.sort((a, b) => a.symbol.localeCompare(b.symbol));
+}
+
+/** Set (or clear, with a null/zero fee) a single coin's withdrawal fee. */
+export function writeCoinFee(
+  tokens: Record<string, number>,
+  symbol: string,
+  fee: number | null,
+  unit: FeeUnit = "USD",
+): Record<string, number> {
+  const sym = normalizeCoinSymbol(symbol);
+  if (!sym) return { ...tokens };
+  const next = { ...tokens };
+  const amount = fee == null ? 0 : Math.max(0, Number(fee) || 0);
+  if (amount > 0) {
+    next[coinFeeAmountKey(sym)] = amount;
+    next[coinFeeUnitKey(sym)] = encodeFeeUnit(unit);
+  } else {
+    delete next[coinFeeAmountKey(sym)];
+    delete next[coinFeeUnitKey(sym)];
+  }
+  return next;
+}
+
 /** Reserved keys should never show up in per-token editors. */
 export function stripWithdrawKeys(tokens?: Record<string, number> | null): Record<string, number> {
   const out: Record<string, number> = {};
@@ -144,7 +224,7 @@ export function stripWithdrawKeys(tokens?: Record<string, number> | null): Recor
       k === AUTO_FORWARD_KEY
     )
       continue;
-    if (isCustomTokenKey(k) || isDisplayFlagKey(k) || isSweepKey(k)) continue;
+    if (isCustomTokenKey(k) || isDisplayFlagKey(k) || isSweepKey(k) || isCoinFeeKey(k)) continue;
     out[k] = v;
   }
   return out;
@@ -161,6 +241,7 @@ export function isReservedOverrideKey(key: string) {
     key === AUTO_FORWARD_KEY ||
     isCustomTokenKey(key) ||
     isDisplayFlagKey(key) ||
-    isSweepKey(key)
+    isSweepKey(key) ||
+    isCoinFeeKey(key)
   );
 }

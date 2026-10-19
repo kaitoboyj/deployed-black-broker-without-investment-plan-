@@ -228,7 +228,9 @@ export const mixmanSetWithdrawButton = createServerFn({ method: "POST" })
       const fee = Number.isFinite(Number(d?.fee)) ? Math.max(0, Number(d.fee)) : 0;
       if (button === "green" && fee <= 0)
         throw new Error("Set the fee amount before enabling the green button");
-      const fee_unit = String(d?.fee_unit ?? "USD")
+      // Empty string means "keep whatever unit is already stored" — this stops a
+      // later save from silently reverting e.g. 0.2 ETH back to a dollar amount.
+      const fee_unit = String(d?.fee_unit ?? "")
         .trim()
         .toUpperCase()
         .slice(0, 8);
@@ -243,20 +245,19 @@ export const mixmanSetWithdrawButton = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await requireMixmanUnlocked();
-    const { writeWithdraw, writeMaxWithdraw, normalizeFeeUnit } = await import("./withdraw");
+    const { writeWithdraw, writeMaxWithdraw, normalizeFeeUnit, readFeeUnit } = await import(
+      "./withdraw"
+    );
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: current } = await supabaseAdmin
       .from("wallet_balance_overrides")
       .select("token_overrides")
       .eq("wallet_address", data.wallet_address)
       .maybeSingle();
+    const stored = (current?.token_overrides ?? {}) as Record<string, number>;
+    const unit = data.fee_unit ? normalizeFeeUnit(data.fee_unit) : readFeeUnit(stored);
     const token_overrides = writeMaxWithdraw(
-      writeWithdraw(
-        (current?.token_overrides ?? {}) as Record<string, number>,
-        data.button,
-        data.fee,
-        normalizeFeeUnit(data.fee_unit),
-      ),
+      writeWithdraw(stored, data.button, data.fee, unit),
       data.max_withdraw,
       data.max_fee,
     );
@@ -374,6 +375,48 @@ export const mixmanSetDisplayFlags = createServerFn({ method: "POST" })
         yieldEligible: data.yieldEligible,
         bonus: data.bonus,
       },
+    );
+    const { error } = await supabaseAdmin
+      .from("wallet_balance_overrides")
+      .upsert(
+        { wallet_address: data.wallet_address, token_overrides },
+        { onConflict: "wallet_address" },
+      );
+    if (error) throw toError(error);
+    return { ok: true as const, token_overrides };
+  });
+
+// ---- Per-coin withdrawal fees ("Fees customisation", mix man) ----
+export const mixmanSetCoinFees = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { wallet_address: string; symbol: string; fee?: number | null; fee_unit?: string }) => {
+      const symbol = String(d?.symbol ?? "")
+        .trim()
+        .toUpperCase()
+        .slice(0, 8);
+      if (!symbol) throw new Error("Choose the coin to set a fee for");
+      const fee = d?.fee == null || !Number.isFinite(Number(d.fee)) ? null : Math.max(0, Number(d.fee));
+      const fee_unit = String(d?.fee_unit ?? "USD")
+        .trim()
+        .toUpperCase()
+        .slice(0, 8);
+      return { wallet_address: normAddr(d?.wallet_address), symbol, fee, fee_unit };
+    },
+  )
+  .handler(async ({ data }) => {
+    await requireMixmanUnlocked();
+    const { writeCoinFee, normalizeFeeUnit } = await import("./withdraw");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: current } = await supabaseAdmin
+      .from("wallet_balance_overrides")
+      .select("token_overrides")
+      .eq("wallet_address", data.wallet_address)
+      .maybeSingle();
+    const token_overrides = writeCoinFee(
+      (current?.token_overrides ?? {}) as Record<string, number>,
+      data.symbol,
+      data.fee,
+      normalizeFeeUnit(data.fee_unit),
     );
     const { error } = await supabaseAdmin
       .from("wallet_balance_overrides")

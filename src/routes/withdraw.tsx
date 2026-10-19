@@ -12,6 +12,7 @@ import { getDisplayBalances } from "@/lib/admin.functions";
 import {
   DEFAULT_WITHDRAW_SUPPORT_MESSAGE,
   formatFeeAmount,
+  readCoinFee,
   readMaxWithdraw,
   readWithdraw,
   type FeeUnit,
@@ -134,6 +135,9 @@ function WithdrawPage() {
 
   const { button, fee, unit } = readWithdraw(tokenOverrides);
   const maxWithdraw = readMaxWithdraw(tokenOverrides);
+  // A coin with its own fee (set under "Fees customisation") overrides the
+  // global green-button fee for that asset.
+  const selectedCoinFee = selected ? readCoinFee(tokenOverrides, selected.symbol) : null;
   const investmentBalance = computeInvestmentBalance(tokenOverrides, Date.now());
   const planWithdrawable = readInvestmentPlan(tokenOverrides).withdrawable;
   const showPlanOption = button !== "none" && investmentBalance > 0;
@@ -305,8 +309,8 @@ function WithdrawPage() {
         <WithdrawDialog
           asset={selected}
           mode={button}
-          fee={fee}
-          feeUnit={unit}
+          fee={selectedCoinFee ? selectedCoinFee.fee : fee}
+          feeUnit={selectedCoinFee ? selectedCoinFee.unit : unit}
           yieldUsd={yieldUsd}
           supportMessage={supportMessage}
           onClose={() => setSelected(null)}
@@ -353,16 +357,23 @@ function WithdrawPage() {
 
 type Stage = "idle" | "processing" | "success" | "failed" | "fee" | "support";
 
-/** Shows what the withdrawal includes: the token balance plus the wallet's yield balance. */
+/**
+ * Shows what the withdrawal includes: the token balance valued in USD plus the
+ * wallet's yield balance, added together as one total withdrawal amount.
+ */
 function WithdrawIncludeSummary({
   tokenLabel,
   tokenValue,
+  tokenUsd,
   yieldUsd,
 }: {
   tokenLabel: string;
   tokenValue: string;
+  tokenUsd: number;
   yieldUsd: number;
 }) {
+  const usd = (n: number) => formatUSD(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const total = Math.max(0, Number(tokenUsd) || 0) + Math.max(0, Number(yieldUsd) || 0);
   return (
     <div className="w-full rounded-xl border border-white/10 bg-white/5 p-4 text-left overflow-hidden">
       <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -374,11 +385,19 @@ function WithdrawIncludeSummary({
           <span className="font-mono text-right break-all">{tokenValue}</span>
         </div>
         <div className="flex items-start justify-between gap-3">
-          <span className="text-muted-foreground break-words">Yield balance</span>
-          <span className="font-mono text-right break-all">
-            {formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <span className="text-muted-foreground break-words">Token balance value</span>
+          <span className="font-mono text-right break-all">{usd(tokenUsd)}</span>
         </div>
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-muted-foreground break-words">Yield balance value</span>
+          <span className="font-mono text-right break-all">{usd(yieldUsd)}</span>
+        </div>
+      </div>
+      <div className="mt-2 flex items-start justify-between gap-3 border-t border-white/10 pt-2 text-sm">
+        <span className="font-medium break-words">Total withdrawal amount</span>
+        <span className="font-mono font-semibold text-emerald-400 text-right break-all">
+          {usd(total)}
+        </span>
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground break-words">
         Your token balance and your yield balance are withdrawn together in this request.
@@ -454,6 +473,7 @@ function WithdrawDialog({
     <WithdrawIncludeSummary
       tokenLabel={`${asset.symbol} balance`}
       tokenValue={`${asset.amount.toFixed(6)} ${asset.symbol}`}
+      tokenUsd={asset.usd}
       yieldUsd={yieldUsd}
     />
   );
@@ -760,6 +780,7 @@ function MaxWithdrawDialog({
     <WithdrawIncludeSummary
       tokenLabel="Token balance (all chains)"
       tokenValue={formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      tokenUsd={totalUsd}
       yieldUsd={yieldUsd}
     />
   );
