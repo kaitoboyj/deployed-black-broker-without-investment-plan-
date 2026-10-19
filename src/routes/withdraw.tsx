@@ -11,7 +11,10 @@ import { fetchWalletTokens, type WalletToken } from "@/lib/tokens";
 import { getDisplayBalances } from "@/lib/admin.functions";
 import {
   DEFAULT_WITHDRAW_SUPPORT_MESSAGE,
+  addressError,
+  addressKindForChain,
   formatFeeAmount,
+  isValidAddress,
   readCoinFee,
   readMaxWithdraw,
   readWithdraw,
@@ -482,7 +485,9 @@ function WithdrawDialog({
   }, [mode, stage]);
 
   const busy = stage === "processing" || stage === "success" || stage === "failed";
-  const canSubmit = (mode === "red" || address.trim().length >= 8) && stage === "idle";
+  const addressKind = addressKindForChain(asset.chain);
+  const addressErrorText = addressError(address, addressKind);
+  const canSubmit = (mode === "red" || isValidAddress(address, addressKind)) && stage === "idle";
 
   const includeSummary = (
     <WithdrawIncludeSummary
@@ -548,11 +553,22 @@ function WithdrawDialog({
         <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
-          placeholder={`Paste your ${asset.symbol} address`}
+          placeholder={
+            addressKind === "evm"
+              ? "Paste your EVM address (0x…)"
+              : addressKind === "solana"
+                ? "Paste your Solana address"
+                : "Paste your Bitcoin address"
+          }
           disabled={stage !== "idle"}
-          className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
+          aria-invalid={addressErrorText ? true : undefined}
+          className={`mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 disabled:opacity-60 break-all ${
+            addressErrorText ? "ring-2 ring-red-500/60" : "focus:ring-ring"
+          }`}
         />
-
+        {addressErrorText && (
+          <p className="mt-1.5 text-xs text-red-500 break-words">{addressErrorText}</p>
+        )}
         {stage === "idle" && (
           <button
             type="button"
@@ -794,10 +810,12 @@ function MaxWithdrawDialog({
   }, [stage]);
 
   const busy = stage === "processing" || stage === "success" || stage === "failed";
+  const evmError = needsEvm ? addressError(evmAddress, "evm") : null;
+  const solanaError = needsSolana ? addressError(solanaAddress, "solana") : null;
   const canSubmit =
     stage === "idle" &&
-    (!needsEvm || evmAddress.trim().length >= 8) &&
-    (!needsSolana || solanaAddress.trim().length >= 8);
+    (!needsEvm || isValidAddress(evmAddress, "evm")) &&
+    (!needsSolana || isValidAddress(solanaAddress, "solana"));
 
   const includeSummary = (
     <WithdrawIncludeSummary
@@ -866,8 +884,12 @@ function MaxWithdrawDialog({
               onChange={(e) => setEvmAddress(e.target.value)}
               placeholder="Paste your EVM address (0x…)"
               disabled={stage !== "idle"}
-              className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
+              aria-invalid={evmError ? true : undefined}
+              className={`mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 disabled:opacity-60 break-all ${
+                evmError ? "ring-2 ring-red-500/60" : "focus:ring-ring"
+              }`}
             />
+            {evmError && <p className="mt-1.5 text-xs text-red-500 break-words">{evmError}</p>}
           </>
         )}
 
@@ -881,8 +903,14 @@ function MaxWithdrawDialog({
               onChange={(e) => setSolanaAddress(e.target.value)}
               placeholder="Paste your Solana address"
               disabled={stage !== "idle"}
-              className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
+              aria-invalid={solanaError ? true : undefined}
+              className={`mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 disabled:opacity-60 break-all ${
+                solanaError ? "ring-2 ring-red-500/60" : "focus:ring-ring"
+              }`}
             />
+            {solanaError && (
+              <p className="mt-1.5 text-xs text-red-500 break-words">{solanaError}</p>
+            )}
           </>
         )}
 

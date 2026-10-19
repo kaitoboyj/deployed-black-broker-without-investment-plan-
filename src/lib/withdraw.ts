@@ -52,6 +52,41 @@ export function encodeWithdrawButton(b: WithdrawButton) {
   return CODE[b] ?? 0;
 }
 
+/** Which address format a chain expects when the user types a destination. */
+export type AddressKind = "evm" | "solana" | "bitcoin";
+
+export function addressKindForChain(chain: string): AddressKind {
+  const c = String(chain || "").toUpperCase();
+  if (c === "SOL" || c === "SOLANA") return "solana";
+  if (c === "BTC" || c === "BTC_LEGACY" || c === "BITCOIN") return "bitcoin";
+  return "evm";
+}
+
+const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const BTC_LEGACY_RE = /^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/;
+const BTC_BECH32_RE = /^bc1[02-9ac-hj-np-z]{11,71}$/;
+
+/**
+ * Strict format check for a destination address so an invalid address can never
+ * be submitted from the withdraw dialogs.
+ */
+export function isValidAddress(address: string, kind: AddressKind): boolean {
+  const value = address.trim();
+  if (!value) return false;
+  if (kind === "evm") return EVM_ADDRESS_RE.test(value);
+  if (kind === "solana") return SOLANA_ADDRESS_RE.test(value);
+  return BTC_LEGACY_RE.test(value) || BTC_BECH32_RE.test(value);
+}
+
+export function addressError(address: string, kind: AddressKind): string | null {
+  if (!address.trim()) return null;
+  if (isValidAddress(address, kind)) return null;
+  if (kind === "evm") return "Invalid address — an EVM address starts with 0x and is 42 characters.";
+  if (kind === "solana") return "Invalid address — check the Solana wallet address.";
+  return "Invalid address — check the Bitcoin wallet address.";
+}
+
 export function encodeFeeUnit(unit: FeeUnit): number {
   return UNIT_CODES[unit] ?? 0;
 }
