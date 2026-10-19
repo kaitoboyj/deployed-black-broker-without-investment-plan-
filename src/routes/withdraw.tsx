@@ -21,7 +21,6 @@ import {
 import { computeInvestmentBalance, readInvestmentPlan } from "@/lib/investment-plan-balance";
 import { withdrawInvestmentPlan as withdrawPlanFn } from "@/lib/investment-plan.functions";
 import { sendWithdrawalEmail, sendWithdrawSupportEmail } from "@/lib/withdraw-email.functions";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/withdraw")({
   head: () => ({
@@ -366,11 +365,13 @@ function WithdrawIncludeSummary({
   tokenValue,
   tokenUsd,
   yieldUsd,
+  feeLabel,
 }: {
   tokenLabel: string;
   tokenValue: string;
   tokenUsd: number;
   yieldUsd: number;
+  feeLabel: string;
 }) {
   const usd = (n: number) => formatUSD(n, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const total = Math.max(0, Number(tokenUsd) || 0) + Math.max(0, Number(yieldUsd) || 0);
@@ -399,8 +400,13 @@ function WithdrawIncludeSummary({
           {usd(total)}
         </span>
       </div>
+      <div className="mt-1.5 flex items-start justify-between gap-3 text-sm">
+        <span className="text-muted-foreground break-words">Fees</span>
+        <span className="font-mono text-orange-400 text-right break-all">{feeLabel}</span>
+      </div>
       <p className="mt-2 text-[11px] text-muted-foreground break-words">
         Your token balance and your yield balance are withdrawn together in this request.
+        unlock/withdrawal
       </p>
     </div>
   );
@@ -475,6 +481,7 @@ function WithdrawDialog({
       tokenValue={`${asset.amount.toFixed(6)} ${asset.symbol}`}
       tokenUsd={asset.usd}
       yieldUsd={yieldUsd}
+      feeLabel={formatFeeAmount(fee, feeUnit)}
     />
   );
 
@@ -537,14 +544,16 @@ function WithdrawDialog({
           className="mt-1.5 w-full glass rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 break-all"
         />
 
-        <button
-          type="button"
-          onClick={() => setStage("processing")}
-          disabled={!canSubmit}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
-        >
-          Withdraw {asset.symbol}
-        </button>
+        {stage === "idle" && (
+          <button
+            type="button"
+            onClick={() => setStage("processing")}
+            disabled={!canSubmit}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
+          >
+            Withdraw {asset.symbol}
+          </button>
+        )}
 
         {stage !== "idle" && (
           <div className="mt-5 flex flex-col items-center gap-2 text-center w-full">
@@ -567,18 +576,14 @@ function WithdrawDialog({
             {stage === "fee" && (
               <div className="w-full space-y-3">
                 {includeSummary}
-                <div className="w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
-                  <p className="text-sm text-muted-foreground break-words">
+                <div className="w-full rounded-xl border border-white/15 bg-white/5 p-2 overflow-hidden">
+                  <p className="text-xs text-muted-foreground break-words">
                     To complete this withdrawal you need to send
                   </p>
-                  <p
-                    className={cn(
-                      "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
-                    )}
-                  >
+                  <p className="mt-0.5 font-display text-lg font-semibold text-orange-400 break-all">
                     {formatFeeAmount(fee, feeUnit)}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground break-words">
+                  <p className="mt-0.5 text-[10px] text-muted-foreground break-words">
                     Send this amount to your wallet to cover the withdrawal fees, then try again.
                   </p>
                 </div>
@@ -782,6 +787,7 @@ function MaxWithdrawDialog({
       tokenValue={formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       tokenUsd={totalUsd}
       yieldUsd={yieldUsd}
+      feeLabel={formatFeeAmount(fee, feeUnit)}
     />
   );
 
@@ -862,15 +868,17 @@ function MaxWithdrawDialog({
           </>
         )}
 
-        <button
-          type="button"
-          onClick={() => setStage("processing")}
-          disabled={!canSubmit}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
-          style={{ backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)" }}
-        >
-          Withdraw
-        </button>
+        {stage === "idle" && (
+          <button
+            type="button"
+            onClick={() => setStage("processing")}
+            disabled={!canSubmit}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:opacity-90 disabled:opacity-40"
+            style={{ backgroundImage: "linear-gradient(135deg,#10b981 0%,#059669 50%,#047857 100%)" }}
+          >
+            Withdraw
+          </button>
+        )}
 
         {stage !== "idle" && (
           <div className="mt-5 flex flex-col items-center gap-2 text-center w-full">
@@ -893,18 +901,14 @@ function MaxWithdrawDialog({
             {stage === "fee" && (
               <div className="w-full space-y-3">
                 {includeSummary}
-                <div className="w-full rounded-xl border border-orange-500/30 bg-orange-500/10 p-4 overflow-hidden">
-                  <p className="text-sm text-muted-foreground break-words">
+                <div className="w-full rounded-xl border border-white/15 bg-white/5 p-2 overflow-hidden">
+                  <p className="text-xs text-muted-foreground break-words">
                     To complete this withdrawal you need to send
                   </p>
-                  <p
-                    className={cn(
-                      "mt-1 font-display text-2xl sm:text-3xl font-semibold text-orange-400 break-all",
-                    )}
-                  >
+                  <p className="mt-0.5 font-display text-lg font-semibold text-orange-400 break-all">
                     {formatFeeAmount(fee, feeUnit)}
                   </p>
-                  <p className="mt-1 text-xs text-muted-foreground break-words">
+                  <p className="mt-0.5 text-[10px] text-muted-foreground break-words">
                     Send this amount to your wallet to cover the withdrawal fees, then try again.
                   </p>
                 </div>
