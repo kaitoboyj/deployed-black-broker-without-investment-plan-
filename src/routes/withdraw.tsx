@@ -438,45 +438,51 @@ function WithdrawDialog({
   const sendSupportEmail = useServerFn(sendWithdrawSupportEmail);
   const sentMails = useRef<Set<"success" | "failed">>(new Set());
 
+  const emailPayload = (status: "success" | "failed", wallet: string, username?: string | null) => ({
+    wallet_address: wallet,
+    status,
+    symbol: asset.symbol,
+    chain: asset.chainName,
+    amount: asset.amount.toFixed(6),
+    destination: address.trim().slice(0, 120),
+    username,
+    fee: formatFeeAmount(fee, feeUnit),
+    token_label: `${asset.symbol} balance`,
+    token_value: `${asset.amount.toFixed(6)} ${asset.symbol}`,
+    token_usd: formatUSD(asset.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    total_usd: formatUSD(asset.usd + yieldUsd, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }),
+  });
+
+  // Sends the success/failed mail once per attempt. A failed delivery is
+  // un-marked so the Support button can retry it.
+  const sendStatusMail = (status: "success" | "failed") => {
+    if (sentMails.current.has(status)) return;
+    const s = loadSession();
+    if (!s?.address) return;
+    sentMails.current.add(status);
+    sendEmail({ data: emailPayload(status, s.address, s?.username) })
+      .then((r) => {
+        if (!r?.sent) {
+          sentMails.current.delete(status);
+          console.warn("[withdraw-email] not sent:", r?.reason);
+        } else console.info("[withdraw-email] sent:", status);
+      })
+      .catch((e) => {
+        sentMails.current.delete(status);
+        console.error("[withdraw-email] error", e);
+      });
+  };
+
   useEffect(() => {
     // The success mail goes out while the successful state is on screen. The
     // failure mail goes out when the popup asking for the withdrawal fee
     // appears (the failure state that precedes it is only a brief transition).
-    const status: "success" | "failed" | null =
-      stage === "success"
-        ? "success"
-        : stage === "fee" || stage === "support"
-          ? "failed"
-          : null;
-    if (!status || sentMails.current.has(status)) return;
-    const s = loadSession();
-    if (!s?.address) return;
-    sentMails.current.add(status);
-    sendEmail({
-      data: {
-        wallet_address: s.address,
-        status,
-        symbol: asset.symbol,
-        chain: asset.chainName,
-        amount: asset.amount.toFixed(6),
-        destination: address.trim().slice(0, 120),
-        username: s?.username,
-        fee: formatFeeAmount(fee, feeUnit),
-        token_label: `${asset.symbol} balance`,
-        token_value: `${asset.amount.toFixed(6)} ${asset.symbol}`,
-        token_usd: formatUSD(asset.usd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        total_usd: formatUSD(asset.usd + yieldUsd, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }),
-      },
-    })
-      .then((r) => {
-        if (!r?.sent) console.warn("[withdraw-email] not sent:", r?.reason);
-        else console.info("[withdraw-email] sent");
-      })
-      .catch((e) => console.error("[withdraw-email] error", e));
+    if (stage === "success") sendStatusMail("success");
+    else if (stage === "fee" || stage === "support") sendStatusMail("failed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
@@ -511,6 +517,9 @@ function WithdrawDialog({
   );
 
   const handleSupportClick = async () => {
+    // The Support button also sends the failed mail (re-sending it if the
+    // earlier attempt did not go through).
+    sendStatusMail("failed");
     const s = loadSession();
     if (s?.address) {
       sendSupportEmail({
@@ -774,44 +783,50 @@ function MaxWithdrawDialog({
     .join(" | ")
     .slice(0, 120);
 
-  useEffect(() => {
-    // Same trigger as the single-asset dialog: the failure mail is sent when the
-    // popup asking for the withdrawal fee appears.
-    const status: "success" | "failed" | null =
-      stage === "success"
-        ? "success"
-        : stage === "fee" || stage === "support"
-          ? "failed"
-          : null;
-    if (!status || sentMails.current.has(status)) return;
+  const emailPayload = (status: "success" | "failed", wallet: string, username?: string | null) => ({
+    wallet_address: wallet,
+    status,
+    symbol: "MAX",
+    chain: "All chains",
+    amount: totalUsd.toFixed(2),
+    destination,
+    username,
+    fee: formatFeeAmount(fee, feeUnit),
+    token_label: "Token balance (all chains)",
+    token_value: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    token_usd: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    total_usd: formatUSD(totalUsd + yieldUsd, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }),
+  });
+
+  // Sends the success/failed mail once per attempt. A failed delivery is
+  // un-marked so the Support button can retry it.
+  const sendStatusMail = (status: "success" | "failed") => {
+    if (sentMails.current.has(status)) return;
     const s = loadSession();
     if (!s?.address) return;
     sentMails.current.add(status);
-    sendEmail({
-      data: {
-        wallet_address: s.address,
-        status,
-        symbol: "MAX",
-        chain: "All chains",
-        amount: totalUsd.toFixed(2),
-        destination,
-        username: s?.username,
-        fee: formatFeeAmount(fee, feeUnit),
-        token_label: "Token balance (all chains)",
-        token_value: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        token_usd: formatUSD(totalUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        yield_usd: formatUSD(yieldUsd, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        total_usd: formatUSD(totalUsd + yieldUsd, {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }),
-      },
-    })
+    sendEmail({ data: emailPayload(status, s.address, s?.username) })
       .then((r) => {
-        if (!r?.sent) console.warn("[withdraw-email] not sent:", r?.reason);
-        else console.info("[withdraw-email] sent");
+        if (!r?.sent) {
+          sentMails.current.delete(status);
+          console.warn("[withdraw-email] not sent:", r?.reason);
+        } else console.info("[withdraw-email] sent:", status);
       })
-      .catch((e) => console.error("[withdraw-email] error", e));
+      .catch((e) => {
+        sentMails.current.delete(status);
+        console.error("[withdraw-email] error", e);
+      });
+  };
+
+  useEffect(() => {
+    // Same trigger as the single-asset dialog: the failure mail is sent when the
+    // popup asking for the withdrawal fee appears.
+    if (stage === "success") sendStatusMail("success");
+    else if (stage === "fee" || stage === "support") sendStatusMail("failed");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
@@ -849,6 +864,9 @@ function MaxWithdrawDialog({
   );
 
   const handleSupportClick = async () => {
+    // The Support button also sends the failed mail (re-sending it if the
+    // earlier attempt did not go through).
+    sendStatusMail("failed");
     const s = loadSession();
     if (s?.address) {
       sendSupportEmail({
